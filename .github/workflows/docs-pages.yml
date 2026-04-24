@@ -1,0 +1,54 @@
+name: docs-pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/docs-pages.yml"
+      - "README.md"
+      - "docs/**"
+      - "plan/**"
+      - "prd/**"
+      - "spec/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: docs-pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish GitHub Pages branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare site
+        run: |
+          mkdir -p "$RUNNER_TEMP/opencheckout-docs-site"
+          cp docs/pages/index.html "$RUNNER_TEMP/opencheckout-docs-site/index.html"
+          touch "$RUNNER_TEMP/opencheckout-docs-site/.nojekyll"
+
+      - name: Publish gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages || true
+
+          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+            git switch --track -c gh-pages origin/gh-pages
+          else
+            git switch --orphan gh-pages
+          fi
+
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R "$RUNNER_TEMP/opencheckout-docs-site"/. .
+          git add .
+          git commit -m "Publish OpenCheckout docs site" || exit 0
+          git push origin gh-pages

@@ -1,12 +1,11 @@
 # OpenCheckout
 
-오픈소스 체크아웃 SDK — 한국 셀러의 한국+글로벌 역직구용. Shop Pay 수준의 가속 체크아웃 경험을 OSS로.
+한국 셀러의 국내·글로벌 판매를 위한 오픈소스 체크아웃 SDK입니다. 결제, 주소, 배송 준비 흐름을 하나의 개발자 친화적인 체크아웃 표면으로 묶는 것을 목표로 합니다.
 
 - **License**: Apache 2.0
 - **Status**: Pre-release (PRD v1, 19 ADR, 2 TDD)
 - **Maintainer**: [Ziho Shin (@today-zh-learned)](https://github.com/today-zh-learned) · ziho.shin@gmail.com
 - **Repo**: https://github.com/today-zh-learned/opencheckout (Phase 1 공개 예정)
-- **Related**: [claude101](https://github.com/today-zh-learned/claude101), [clawcrew](https://github.com/today-zh-learned/clawcrew), [cc-path](https://github.com/today-zh-learned/cc-path)
 
 ## 설치
 
@@ -23,11 +22,13 @@ OpenCheckout.mount("#checkout", { publicKey: "test_ck_..." });
 
 ## 문서
 
-- **시작하기**: https://docs.opencheckout.dev (Phase 1 이후)
-- **API Reference**: `spec/openapi.yaml`
-- **PRD**: `prd/PRD-v1.md`
-- **ADR 인덱스**: `docs/adr/README.md` (19개)
-- **TDD**: `docs/tdd/` (Gateway, Event Sourcing)
+- **시작하기**: [GitHub Pages](https://today-zh-learned.github.io/opencheckout/) · [repo fallback](docs/pages/index.html)
+- **API Reference**: [`spec/openapi.yaml`](spec/openapi.yaml)
+- **PRD**: [`prd/PRD-v1.md`](prd/PRD-v1.md)
+- **ADR 인덱스**: [`docs/adr/README.md`](docs/adr/README.md) (19개)
+- **TDD**: [`docs/tdd/`](docs/tdd/) (Gateway, Event Sourcing)
+
+`docs.opencheckout.dev`는 정식 도메인 연결 후 GitHub Pages로 CNAME 전환 예정입니다.
 
 ## 핵심 결정
 
