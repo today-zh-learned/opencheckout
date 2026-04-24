@@ -1,4 +1,5 @@
 name: test
+
 on:
   pull_request:
   push:
@@ -6,64 +7,78 @@ on:
   schedule:
     - cron: "0 17 * * *" # 02:00 KST nightly
 
+permissions:
+  contents: read
+
 jobs:
   small:
-    name: "@small (PR blocker)"
+    name: "@small + build"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29  # v4
-      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda  # v4
-        with: { version: 9 }
-      - uses: actions/setup-node@26961cf329f22f6837d5f54c3efd76b480300ace  # v4
-        with: { node-version: 20, cache: pnpm }
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+        with:
+          version: 9
+      - uses: actions/setup-node@26961cf329f22f6837d5f54c3efd76b480300ace # v4
+        with:
+          node-version: 22
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm biome check
-      - run: pnpm tsc --noEmit
-      - run: pnpm vitest run --reporter=verbose --testNamePattern="@small"
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test:small
+      - run: pnpm build
 
   medium:
-    name: "@medium (PR blocker for touched packages, full nightly)"
+    name: "@medium"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: small
     services:
       postgres:
-        image: postgres:16@sha256:a1c7f7bd0b42afb11bc0fb2acbfcf5c8ed1c3d5c1d1e7bf3f5f5f5f5f5f5f5f5
-        env: { POSTGRES_PASSWORD: test }
-        ports: [5432:5432]
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: opencheckout_test
+          POSTGRES_PASSWORD: test
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d opencheckout_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
-      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda
-        with: { version: 9 }
-      - uses: actions/setup-node@26961cf329f22f6837d5f54c3efd76b480300ace
-        with: { node-version: 20, cache: pnpm }
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+        with:
+          version: 9
+      - uses: actions/setup-node@26961cf329f22f6837d5f54c3efd76b480300ace # v4
+        with:
+          node-version: 22
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: "medium tests (touched packages on PR, all on schedule)"
-        run: |
-          if [[ "${{ github.event_name }}" == "schedule" ]]; then
-            pnpm vitest run --testNamePattern="@medium"
-          else
-            pnpm turbo test:medium --filter="...[origin/main]"
-          fi
+      - run: pnpm test:medium
 
   api-lint:
-    name: "API linter (Google AIP)"
+    name: "API linter"
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - run: |
           curl -sSL https://github.com/googleapis/api-linter/releases/download/v1.68.1/api-linter-1.68.1-linux-amd64.tar.gz | tar xz
           ./api-linter spec/openapi.yaml --set-exit-status
 
   oasdiff:
-    name: "oasdiff (breaking API check)"
+    name: "oasdiff"
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
-        with: { fetch-depth: 0 }
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        with:
+          fetch-depth: 0
       - run: |
           git fetch origin main
           docker run --rm -v "$(pwd):/repo" tufin/oasdiff:latest \
@@ -74,10 +89,13 @@ jobs:
   security:
     name: "security scans"
     runs-on: ubuntu-latest
-    permissions: { security-events: write }
+    permissions:
+      contents: read
+      security-events: write
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
-        with: { fetch-depth: 0 }
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        with:
+          fetch-depth: 0
       - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
       - uses: returntocorp/semgrep-action@c49e4a59731777134cbfc61f6f9cdfc19c7a2f43
         with:
@@ -87,11 +105,12 @@ jobs:
             p/nodejs
             p/secrets
       - uses: github/codeql-action/init@f779452ac5af1c261dce0346a8f964149f49322b # v3
-        with: { languages: javascript-typescript }
+        with:
+          languages: javascript-typescript
       - uses: github/codeql-action/analyze@f779452ac5af1c261dce0346a8f964149f49322b
 
   large:
-    name: "@large (nightly + pre-release only)"
+    name: "@large"
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: github.event_name == 'schedule' || contains(github.ref, 'release/')
@@ -99,12 +118,13 @@ jobs:
       TOSS_TEST_CLIENT_KEY: ${{ secrets.TOSS_TEST_CLIENT_KEY }}
       TOSS_TEST_SECRET_KEY: ${{ secrets.TOSS_TEST_SECRET_KEY }}
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
-      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda
-        with: { version: 9 }
-      - uses: actions/setup-node@26961cf329f22f6837d5f54c3efd76b480300ace
-        with: { node-version: 20, cache: pnpm }
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+        with:
+          version: 9
+      - uses: actions/setup-node@26961cf329f22f6837d5f54c3efd76b480300ace # v4
+        with:
+          node-version: 22
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm playwright install --with-deps chromium
-      - run: pnpm vitest run --testNamePattern="@large"
-      - run: pnpm playwright test
+      - run: pnpm test:large

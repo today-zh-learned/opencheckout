@@ -1,0 +1,14 @@
+.git
+.github
+.omc
+.omx
+node_modules
+**/node_modules
+dist
+**/dist
+coverage
+**/coverage
+.turbo
+**/.turbo
+.DS_Store
+*.log

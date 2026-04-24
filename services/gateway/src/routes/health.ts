@@ -1,15 +1,20 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 
 const health = new Hono();
 
-health.get("/health", (c) =>
+const healthHandler = (c: Context) =>
   c.json({
     status: "ok",
     version: process.env.npm_package_version ?? "0.0.1",
     timestamp: new Date().toISOString(),
-  }),
-);
+  });
 
-health.get("/ready", (c) => c.json({ status: "ready" }));
+const readinessHandler = (c: Context) => c.json({ status: "ready" });
+
+health.get("/health", healthHandler);
+health.get("/healthz", healthHandler);
+health.get("/ready", readinessHandler);
+health.get("/readyz", readinessHandler);
 
 export { health };

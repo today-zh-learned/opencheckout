@@ -38,6 +38,18 @@ OpenCheckout.mount("#checkout", { publicKey: "test_ck_..." });
 - 문서 = Docusaurus + OpenAPI renderer
 - 파이프라인 = [gstack](https://github.com/garrytan/gstack) (`/office-hours → /ship`)
 
+## 배포
+
+Gateway의 Phase 1 기본 배포 타깃은 Fly.io입니다.
+
+```bash
+fly apps create opencheckout-gateway
+fly tokens create deploy --app opencheckout-gateway
+```
+
+생성한 토큰을 GitHub Actions secret `FLY_API_TOKEN`으로 등록하면 `main` push마다
+`.github/workflows/deploy-gateway.yml`이 `fly.toml`과 `Dockerfile`로 배포합니다.
+
 ## 운영 원칙
 
 ### Beyoncé Rule

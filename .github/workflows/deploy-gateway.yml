@@ -1,0 +1,73 @@
+name: deploy-gateway
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/deploy-gateway.yml"
+      - "Dockerfile"
+      - "fly.toml"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - "tsconfig.base.json"
+      - "packages/**"
+      - "services/gateway/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-gateway-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy gateway to Fly.io
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - name: Check Fly deploy token
+        if: env.FLY_API_TOKEN == ''
+        run: |
+          echo "::error::Missing FLY_API_TOKEN repository or environment secret."
+          echo "Create the Fly app named opencheckout-gateway, then add a Fly deploy token as FLY_API_TOKEN."
+          exit 1
+
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        if: env.FLY_API_TOKEN != ''
+
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+        if: env.FLY_API_TOKEN != ''
+        with:
+          version: 9
+
+      - uses: actions/setup-node@26961cf329f22f6837d5f54c3efd76b480300ace # v4
+        if: env.FLY_API_TOKEN != ''
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        if: env.FLY_API_TOKEN != ''
+        run: pnpm install --frozen-lockfile
+
+      - name: Preflight
+        if: env.FLY_API_TOKEN != ''
+        run: |
+          pnpm lint
+          pnpm typecheck
+          pnpm test:small
+          pnpm build
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+        if: env.FLY_API_TOKEN != ''
+
+      - name: Deploy
+        if: env.FLY_API_TOKEN != ''
+        run: flyctl deploy --remote-only --config fly.toml
