@@ -1,5 +1,6 @@
 {
   "name": "@opencheckout/adapter-juso",
+  "private": true,
   "version": "0.0.1",
   "description": "OpenCheckout Juso/Places address adapter — Korean address lookup",
   "type": "module",

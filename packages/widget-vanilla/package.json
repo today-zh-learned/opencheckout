@@ -1,8 +1,9 @@
 {
-  "name": "@opencheckout/widget-vanilla",
+  "name": "@opencheckout/widget",
   "version": "0.0.1",
   "description": "OpenCheckout embeddable Web Components checkout widget",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -21,11 +22,11 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@opencheckout/core": "workspace:*",
     "preact": "^10.25.4"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "happy-dom": "^15.11.6",
     "tsup": "^8.3.5",
     "typescript": "5.7.2",
     "vitest": "3.1.1"

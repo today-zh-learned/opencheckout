@@ -1,5 +1,6 @@
 {
   "name": "@opencheckout/adapter-toss",
+  "private": true,
   "version": "0.0.1",
   "description": "OpenCheckout Toss Payments adapter — client, ACL, webhook transition policy",
   "type": "module",

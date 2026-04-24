@@ -9,3 +9,7 @@ coverage/
 .env
 .env.local
 .env.*.local
+
+# CI build artifact
+docs/pages/assets/opencheckout-widget.js
+.claude/

@@ -1,5 +1,6 @@
 {
   "name": "@opencheckout/address",
+  "private": true,
   "version": "0.0.1",
   "description": "OpenCheckout address domain — canonical record, display DTO, port",
   "type": "module",

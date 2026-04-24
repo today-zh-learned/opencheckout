@@ -5,10 +5,7 @@
     "outDir": "dist",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
-    "jsxImportSource": "preact",
-    "paths": {
-      "@opencheckout/core": ["../core/src/index.ts"]
-    }
+    "jsxImportSource": "preact"
   },
   "include": ["src"]
 }

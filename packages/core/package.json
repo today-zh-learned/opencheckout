@@ -1,5 +1,6 @@
 {
   "name": "@opencheckout/core",
+  "private": true,
   "version": "0.0.1",
   "description": "OpenCheckout core domain — aggregates, ports, value objects",
   "type": "module",

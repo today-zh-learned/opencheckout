@@ -19,7 +19,8 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "changeset publish"
+    "release": "changeset publish",
+    "docs:build": "pnpm -F @opencheckout/widget build && node scripts/build-pages-assets.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
