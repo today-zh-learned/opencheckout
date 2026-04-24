@@ -1,0 +1,32 @@
+{
+  "name": "@opencheckout/address",
+  "version": "0.0.1",
+  "description": "OpenCheckout address domain — canonical record, display DTO, port",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
+    "test:small": "vitest run --reporter=verbose",
+    "test:medium": "vitest run src/**/*.medium.test.ts --passWithNoTests --reporter=verbose",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@opencheckout/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsup": "^8.3.5",
+    "typescript": "5.7.2",
+    "vitest": "3.1.1"
+  }
+}

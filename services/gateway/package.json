@@ -1,0 +1,42 @@
+{
+  "name": "@opencheckout/gateway",
+  "version": "0.0.1",
+  "description": "OpenCheckout API gateway — Hono, 9 middlewares, DB migrations, outbox",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
+    "dev": "node --watch dist/index.js",
+    "dev:build": "tsup src/index.ts --format esm --watch",
+    "test:small": "vitest run src/**/*.small.test.ts --reporter=verbose",
+    "test:medium": "vitest run src/**/*.medium.test.ts --passWithNoTests --reporter=verbose",
+    "test:large": "vitest run src/**/*.large.test.ts --passWithNoTests --reporter=verbose",
+    "db:migrate": "node dist/db/migrate.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.8",
+    "@opencheckout/adapter-juso": "workspace:*",
+    "@opencheckout/adapter-toss": "workspace:*",
+    "@opencheckout/address": "workspace:*",
+    "@opencheckout/core": "workspace:*",
+    "@opencheckout/payments": "workspace:*",
+    "hono": "4.7.4",
+    "postgres": "^3.4.5",
+    "zod": "3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsup": "^8.3.5",
+    "typescript": "5.7.2",
+    "vitest": "3.1.1"
+  }
+}

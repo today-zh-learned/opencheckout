@@ -1,0 +1,33 @@
+{
+  "name": "@opencheckout/widget-vanilla",
+  "version": "0.0.1",
+  "description": "OpenCheckout embeddable Web Components checkout widget",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
+    "dev": "tsup src/index.ts --format esm --watch",
+    "test:small": "vitest run --reporter=verbose",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@opencheckout/core": "workspace:*",
+    "preact": "^10.25.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsup": "^8.3.5",
+    "typescript": "5.7.2",
+    "vitest": "3.1.1"
+  }
+}
