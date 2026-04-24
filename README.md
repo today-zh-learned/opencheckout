@@ -3,7 +3,7 @@
 오픈소스 체크아웃 SDK — 한국 셀러의 한국+글로벌 역직구용. Shop Pay 수준의 가속 체크아웃 경험을 OSS로.
 
 - **License**: Apache 2.0
-- **Status**: Pre-release (PRD v0, 17 ADR, 2 TDD)
+- **Status**: Pre-release (PRD v1, 19 ADR, 2 TDD)
 - **Maintainer**: [Ziho Shin (@today-zh-learned)](https://github.com/today-zh-learned) · ziho.shin@gmail.com
 - **Repo**: https://github.com/today-zh-learned/opencheckout (Phase 1 공개 예정)
 - **Related**: [claude101](https://github.com/today-zh-learned/claude101), [clawcrew](https://github.com/today-zh-learned/clawcrew), [cc-path](https://github.com/today-zh-learned/cc-path)
@@ -25,8 +25,8 @@ OpenCheckout.mount("#checkout", { publicKey: "test_ck_..." });
 
 - **시작하기**: https://docs.opencheckout.dev (Phase 1 이후)
 - **API Reference**: `spec/openapi.yaml`
-- **PRD**: `prd/PRD-v0.md`
-- **ADR 인덱스**: `docs/adr/README.md` (18개)
+- **PRD**: `prd/PRD-v1.md`
+- **ADR 인덱스**: `docs/adr/README.md` (19개)
 - **TDD**: `docs/tdd/` (Gateway, Event Sourcing)
 
 ## 핵심 결정
@@ -44,10 +44,13 @@ Gateway의 Phase 1 기본 배포 타깃은 Fly.io입니다.
 
 ```bash
 fly apps create opencheckout-gateway
+fly secrets set \
+  WIDGET_TOKEN_SECRET="$(openssl rand -base64 32)" \
+  ALLOWED_ORIGINS="https://merchant.example"
 fly tokens create deploy --app opencheckout-gateway
 ```
 
-생성한 토큰을 GitHub Actions secret `FLY_API_TOKEN`으로 등록하면 `main` push마다
+생성한 deploy token을 GitHub Actions secret `FLY_API_TOKEN`으로 등록하면 `main` push마다
 `.github/workflows/deploy-gateway.yml`이 `fly.toml`과 `Dockerfile`로 배포합니다.
 
 ## 운영 원칙

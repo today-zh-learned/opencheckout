@@ -67,6 +67,8 @@ jobs:
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
         if: env.FLY_API_TOKEN != ''
+        with:
+          version: 0.4.40
 
       - name: Deploy
         if: env.FLY_API_TOKEN != ''

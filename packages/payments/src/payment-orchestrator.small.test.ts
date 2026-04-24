@@ -106,7 +106,8 @@ describe("PaymentOrchestrator", () => {
         eventType: "payment.initiated",
         payload: {
           orderId,
-          amount: paymentId,
+          amount: "89000",
+          currency: "KRW",
           checkoutUrl: "https://checkout.test/pay",
         },
       },

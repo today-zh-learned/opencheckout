@@ -17,9 +17,9 @@
     "start": "node dist/index.js",
     "dev": "node --watch dist/index.js",
     "dev:build": "tsup src/index.ts --format esm --watch",
-    "test:small": "vitest run src/**/*.small.test.ts --reporter=verbose",
-    "test:medium": "vitest run src/**/*.medium.test.ts --passWithNoTests --reporter=verbose",
-    "test:large": "vitest run src/**/*.large.test.ts --passWithNoTests --reporter=verbose",
+    "test:small": "vitest run small.test.ts --reporter=verbose",
+    "test:medium": "vitest run medium.test.ts --passWithNoTests --reporter=verbose",
+    "test:large": "vitest run large.test.ts --passWithNoTests --reporter=verbose",
     "db:migrate": "node dist/db/migrate.js",
     "clean": "rm -rf dist"
   },

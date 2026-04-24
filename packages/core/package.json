@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check src/",
     "test:small": "vitest run --reporter=verbose",
-    "test:medium": "vitest run src/**/*.medium.test.ts --passWithNoTests --reporter=verbose",
+    "test:medium": "vitest run medium.test.ts --passWithNoTests --reporter=verbose",
     "clean": "rm -rf dist"
   },
   "devDependencies": {

@@ -52,7 +52,8 @@ export class PaymentOrchestrator {
       eventType: "payment.initiated",
       payload: {
         orderId: cmd.orderId,
-        amount: result.value.paymentId,
+        amount: String(cmd.amount.amount),
+        currency: cmd.amount.currency,
         checkoutUrl: result.value.checkoutUrl,
       },
     });
