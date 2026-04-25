@@ -205,4 +205,241 @@ export const WIDGET_CSS = `
     font-size: 11px;
     margin: 4px 0 0;
   }
+
+  /* Payment-method tile system */
+  .oc-pm-header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 0 12px;
+  }
+
+  .oc-pm-amount-chip {
+    background: #1f4d3a;
+    border-radius: 999px;
+    color: #fffaf0;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 6px 12px;
+  }
+
+  .oc-pm-tiles {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 4px;
+  }
+
+  .oc-pm-tile {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.62);
+    border: 1px solid rgba(87, 79, 52, 0.18);
+    border-radius: 12px;
+    color: #262319;
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    padding: 12px 14px;
+    transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+  }
+
+  .oc-pm-tile:hover {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(31, 77, 58, 0.45);
+  }
+
+  .oc-pm-tile:focus-visible {
+    outline: 3px solid #d38b27;
+    outline-offset: 2px;
+  }
+
+  .oc-pm-tile[data-selected="true"] {
+    background: rgba(31, 77, 58, 0.10);
+    border-color: #1f4d3a;
+    box-shadow: inset 0 0 0 1px #1f4d3a;
+  }
+
+  .oc-pm-tile-radio {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    border: 0;
+  }
+
+  .oc-pm-icon {
+    align-items: center;
+    color: #1f4d3a;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 20px;
+    justify-content: center;
+    width: 20px;
+  }
+
+  .oc-pm-label {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .oc-pm-chevron {
+    color: rgba(38, 35, 25, 0.45);
+    font-size: 14px;
+    transition: transform 160ms ease, color 120ms ease;
+  }
+
+  .oc-pm-tile[data-selected="true"] .oc-pm-chevron {
+    color: #1f4d3a;
+    transform: rotate(90deg);
+  }
+
+  .oc-pm-detail {
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    transition: grid-template-rows 220ms ease;
+  }
+
+  .oc-pm-detail[data-open="true"] {
+    grid-template-rows: 1fr;
+  }
+
+  .oc-pm-detail-inner {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(87, 79, 52, 0.16);
+    border-radius: 12px;
+    margin-top: 8px;
+    min-height: 0;
+    padding: 12px;
+  }
+
+  .oc-pm-detail-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+
+  .oc-installment-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .oc-installment-cell {
+    background: #fff;
+    border: 1px solid rgba(87, 79, 52, 0.22);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 8px 4px;
+    text-align: center;
+    transition: border-color 120ms ease, background-color 120ms ease;
+  }
+
+  .oc-installment-cell:hover {
+    border-color: #1f4d3a;
+  }
+
+  .oc-installment-cell:focus-visible {
+    outline: 2px solid #d38b27;
+    outline-offset: 1px;
+  }
+
+  .oc-installment-cell[data-selected="true"] {
+    background: #1f4d3a;
+    border-color: #1f4d3a;
+    color: #fffaf0;
+  }
+
+  .oc-bank-select {
+    background: #fff;
+    border: 1px solid rgba(87, 79, 52, 0.26);
+    border-radius: 10px;
+    font: inherit;
+    padding: 9px 12px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .oc-bank-select:focus-visible {
+    outline: 3px solid #d38b27;
+    outline-offset: 1px;
+  }
+
+  .oc-pm-note {
+    color: #4d4a3b;
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  .oc-easy-pay-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .oc-easy-pay-chip {
+    background: #fff;
+    border: 1px solid rgba(87, 79, 52, 0.22);
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 6px 12px;
+    transition: border-color 120ms ease, background-color 120ms ease;
+  }
+
+  .oc-easy-pay-chip:hover {
+    border-color: #1f4d3a;
+  }
+
+  .oc-easy-pay-chip:focus-visible {
+    outline: 2px solid #d38b27;
+    outline-offset: 1px;
+  }
+
+  .oc-easy-pay-chip[data-selected="true"] {
+    background: #1f4d3a;
+    border-color: #1f4d3a;
+    color: #fffaf0;
+  }
+
+  .oc-pm-skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(214, 211, 199, 0.35) 0%,
+      rgba(214, 211, 199, 0.6) 50%,
+      rgba(214, 211, 199, 0.35) 100%
+    );
+    background-size: 200% 100%;
+    border-radius: 12px;
+    height: 56px;
+    animation: oc-pm-shimmer 1200ms linear infinite;
+  }
+
+  .oc-pm-skeleton + .oc-pm-skeleton {
+    margin-top: 8px;
+  }
+
+  .oc-pm-fade {
+    animation: oc-pm-fade-in 220ms ease;
+  }
+
+  @keyframes oc-pm-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  @keyframes oc-pm-fade-in {
+    from { opacity: 0; transform: translateY(2px); }
+    to { opacity: 1; transform: none; }
+  }
 `;

@@ -386,6 +386,212 @@ describe("postal validation", () => {
   });
 });
 
+/**
+ * Helpers for payment-widget tests. The widget shows a brief skeleton (~100ms)
+ * before mounting the real tile UI, so tests wait for the radio role to appear.
+ */
+function paymentHost(id: string): HTMLElement {
+  const target = document.getElementById(id);
+  if (!target?.firstElementChild) throw new Error(`payment widget host missing: ${id}`);
+  return target.firstElementChild as HTMLElement;
+}
+
+async function waitForTiles(host: HTMLElement, timeoutMs = 1000): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const tile = host.shadowRoot?.querySelector('[role="radio"][data-method]');
+    if (tile) return;
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  throw new Error("payment tiles never rendered");
+}
+
+function getTile(host: HTMLElement, code: string): HTMLElement {
+  const tile = host.shadowRoot?.querySelector(`[data-method="${code}"]`) as HTMLElement | null;
+  if (!tile) throw new Error(`tile not found: ${code}`);
+  return tile;
+}
+
+function visibleMethodCodes(host: HTMLElement): string[] {
+  const tiles = host.shadowRoot?.querySelectorAll("[data-method]");
+  return Array.from(tiles ?? []).map((t) => (t as HTMLElement).dataset.method ?? "");
+}
+
+describe("payment widget — method visibility & details (PAN-free)", () => {
+  it("KR buyer sees card / transfer / virtual-account / easy-pay", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS", locale: "ko" });
+    widgets.setAmount({ value: 49900, currency: "KRW" });
+    widgets.setOrder({ id: "o1", name: "Glow Serum", buyerCountry: "KR" });
+
+    makeTarget("p-kr");
+    widgets.renderPayment({ selector: "#p-kr" });
+    const host = paymentHost("p-kr");
+    await waitForTiles(host);
+
+    const codes = visibleMethodCodes(host);
+    expect(codes).toContain("card");
+    expect(codes).toContain("transfer");
+    expect(codes).toContain("virtual-account");
+    expect(codes).toContain("easy-pay");
+    expect(codes).not.toContain("foreign-card");
+  });
+
+  it("intl buyer sees card / foreign-card / easy-pay (no kr-only methods)", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS", locale: "en" });
+    widgets.setAmount({ value: 49.9, currency: "USD" });
+    widgets.setOrder({ id: "o2", name: "Glow Serum", buyerCountry: "US" });
+
+    makeTarget("p-us");
+    widgets.renderPayment({ selector: "#p-us" });
+    const host = paymentHost("p-us");
+    await waitForTiles(host);
+
+    const codes = visibleMethodCodes(host);
+    expect(codes).toContain("card");
+    expect(codes).toContain("foreign-card");
+    expect(codes).toContain("easy-pay");
+    expect(codes).not.toContain("transfer");
+    expect(codes).not.toContain("virtual-account");
+  });
+
+  it("emits installmentChange when KR card is selected and a month tile is clicked", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS", locale: "ko" });
+    widgets.setAmount({ value: 100000, currency: "KRW" });
+    widgets.setOrder({ id: "o3", name: "Test", buyerCountry: "KR" });
+
+    makeTarget("p-inst");
+    const pay = widgets.renderPayment({ selector: "#p-inst" });
+    const host = paymentHost("p-inst");
+    await waitForTiles(host);
+
+    let installmentReceived: number | null = null;
+    pay.on("installmentChange", (m) => {
+      installmentReceived = m;
+    });
+
+    // Select card tile (already default), then click a 3-month installment cell.
+    getTile(host, "card").click();
+    const cells = host.shadowRoot?.querySelectorAll(".oc-installment-cell");
+    expect(cells?.length).toBeGreaterThan(2);
+    const threeMonth = Array.from(cells ?? []).find((c) => (c.textContent ?? "").includes("3"));
+    expect(threeMonth).toBeTruthy();
+    (threeMonth as HTMLButtonElement).click();
+
+    expect(installmentReceived).toBe(3);
+  });
+
+  it("emits bankSelect when virtual-account is chosen and bank changes", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS", locale: "ko" });
+    widgets.setAmount({ value: 100000, currency: "KRW" });
+    widgets.setOrder({ id: "o4", name: "Test", buyerCountry: "KR" });
+
+    makeTarget("p-bank");
+    const pay = widgets.renderPayment({ selector: "#p-bank" });
+    const host = paymentHost("p-bank");
+    await waitForTiles(host);
+
+    let bankReceived: string | null = null;
+    pay.on("bankSelect", (b) => {
+      bankReceived = b;
+    });
+
+    getTile(host, "virtual-account").click();
+    const select = host.shadowRoot?.querySelector("select.oc-bank-select") as HTMLSelectElement;
+    expect(select).toBeTruthy();
+    expect(select.options.length).toBeGreaterThan(1);
+    select.value = "shinhan";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(bankReceived).toBe("shinhan");
+  });
+
+  it("emits easyPaySelect when easy-pay brand chip is clicked", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS", locale: "en" });
+    widgets.setAmount({ value: 49.9, currency: "USD" });
+    widgets.setOrder({ id: "o5", name: "Test", buyerCountry: "US" });
+
+    makeTarget("p-easy");
+    const pay = widgets.renderPayment({
+      selector: "#p-easy",
+      easyPayBrands: ["paypal", "other"],
+    });
+    const host = paymentHost("p-easy");
+    await waitForTiles(host);
+
+    let brandReceived: string | null = null;
+    pay.on("easyPaySelect", (b) => {
+      brandReceived = b;
+    });
+
+    getTile(host, "easy-pay").click();
+    const chips = host.shadowRoot?.querySelectorAll(".oc-easy-pay-chip");
+    expect(chips?.length).toBe(2);
+    const other = Array.from(chips ?? []).find(
+      (c) => (c.getAttribute("data-selected") ?? "") === "false",
+    );
+    expect(other).toBeTruthy();
+    (other as HTMLButtonElement).click();
+
+    // The default brand (paypal) is auto-selected on tile click; the second chip is "other".
+    expect(brandReceived).toBe("other");
+  });
+
+  it("methods option restricts the visible tile set", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS", locale: "ko" });
+    widgets.setAmount({ value: 49900, currency: "KRW" });
+    widgets.setOrder({ id: "o6", name: "Test", buyerCountry: "KR" });
+
+    makeTarget("p-only");
+    widgets.renderPayment({ selector: "#p-only", methods: ["easy-pay"] });
+    const host = paymentHost("p-only");
+    await waitForTiles(host);
+
+    const codes = visibleMethodCodes(host);
+    expect(codes).toEqual(["easy-pay"]);
+  });
+
+  it("renders no card-number / cvc / expiry input fields (PAN boundary)", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS", locale: "ko" });
+    widgets.setAmount({ value: 49900, currency: "KRW" });
+    widgets.setOrder({ id: "o7", name: "Test", buyerCountry: "KR" });
+
+    makeTarget("p-pan");
+    widgets.renderPayment({ selector: "#p-pan" });
+    const host = paymentHost("p-pan");
+    await waitForTiles(host);
+
+    // Click each method and assert no PAN-collecting field appears.
+    for (const code of ["card", "transfer", "virtual-account", "easy-pay"]) {
+      const tile = host.shadowRoot?.querySelector(`[data-method="${code}"]`) as HTMLElement;
+      tile.click();
+      const inputs = Array.from(host.shadowRoot?.querySelectorAll("input") ?? []);
+      for (const inp of inputs) {
+        const name = (inp.getAttribute("name") ?? "").toLowerCase();
+        const auto = (inp.getAttribute("autocomplete") ?? "").toLowerCase();
+        const ph = (inp.getAttribute("placeholder") ?? "").toLowerCase();
+        const type = (inp.getAttribute("type") ?? "").toLowerCase();
+        // Hidden tile-radios are allowed (name = "oc-payment", value = method code, no PAN)
+        // No card-number / cvc / expiry inputs.
+        expect(name).not.toContain("card");
+        expect(name).not.toContain("cvc");
+        expect(name).not.toContain("cvv");
+        expect(name).not.toContain("expir");
+        expect(auto).not.toContain("cc-");
+        expect(ph).not.toContain("4111");
+        expect(ph).not.toContain("cvc");
+        expect(type).not.toBe("password");
+      }
+    }
+  });
+});
+
 describe("address widget — global behaviour", () => {
   it("emits AddressSelection with both postal and zip aliased", async () => {
     const oc = await load({ publishableKey: "pk_test_kr01_abc123" });

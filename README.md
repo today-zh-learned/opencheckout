@@ -5,7 +5,7 @@
 역직구 체크아웃 연동을 18줄 안에서, 15분 이내에 마칩니다.
 
 - **License**: Apache 2.0
-- **Bundle**: 17 KB gzipped, 49 small tests, Preact 런타임 단일 공유
+- **Bundle**: ~21 KB gzipped (25 KB 예산 내), 56 small tests, Preact 런타임 단일 공유
 - **Address coverage**: 15개국 스키마 · KR 시/도 17개 + 시/군/구 250+ cascading · 한글 초성 검색 · 우편번호 정규식 검증
 - **Status**: Pre-release (PRD v1, 19 ADR, 2 TDD)
 - **Maintainer**: [Ziho Shin (@today-zh-learned)](https://github.com/today-zh-learned) · ziho.shin@gmail.com
@@ -94,7 +94,13 @@ CheckoutWidgets {
 
   renderAddress(p: { selector: string; variantKey?: string }): AddressWidget;
   renderShipping(p: { selector: string }): ShippingWidget;
-  renderPayment(p: { selector: string; variantKey?: string }): PaymentWidget;
+  renderPayment(p: {
+    selector: string;
+    variantKey?: string;
+    methods?: readonly string[];           // 노출할 결제수단 화이트리스트 (미지정 = 국가별 자동)
+    easyPayBrands?: readonly string[];     // 간편결제 브랜드 (기본: ["paypal"])
+    installmentMaxMonths?: number;         // KR 할부 최대 (기본 12)
+  }): PaymentWidget;
   renderAgreement(p: { selector: string }): AgreementWidget;
 
   requestPayment(p: {
@@ -120,7 +126,10 @@ AddressWidget.on("addressSelect", (a: {
   zip: string;            // postal alias (deprecated, 호환용)
 }) => void);
 ShippingWidget.on("methodSelect", (m: { carrier: string; rate: number }) => void);
-PaymentWidget.on("paymentMethodSelect", (code: string) => void);
+PaymentWidget.on("paymentMethodSelect", (code: string) => void);     // card | transfer | virtual-account | foreign-card | easy-pay
+PaymentWidget.on("installmentChange", (months: number) => void);     // 0 = 일시불, KR 카드 한정
+PaymentWidget.on("bankSelect", (bankCode: string) => void);          // 가상계좌 은행
+PaymentWidget.on("easyPaySelect", (brand: string) => void);          // 간편결제 브랜드
 AgreementWidget.on("agreementStatusChange", (agreed: boolean) => void);
 ```
 

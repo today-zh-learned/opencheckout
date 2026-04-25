@@ -732,6 +732,500 @@
         color: var(--quiet);
       }
 
+      /* ---------- View tabs (Individual / Integrated) ---------- */
+      .view-tabs {
+        display: inline-flex;
+        align-items: center;
+        gap: 0;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface-soft);
+      }
+      .view-tab {
+        position: relative;
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 7px 14px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--muted);
+        font-family: var(--font-ui);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: color var(--t-fast) var(--ease-snap), background var(--t-fast) var(--ease-snap);
+      }
+      .view-tab .glyph {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--quiet);
+      }
+      .view-tab:hover { color: var(--ink); }
+      .view-tab[aria-pressed="true"] {
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: var(--shadow-sm);
+      }
+      .view-tab[aria-pressed="true"] .glyph { color: var(--accent); }
+      .view-toolbar {
+        display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+        margin-bottom: 4px;
+      }
+      .view-toolbar .toolbar-note {
+        font-family: var(--font-mono);
+        font-size: 11px; color: var(--quiet);
+        letter-spacing: 0.02em;
+      }
+      .view-toolbar .toolbar-spacer { flex: 1 1 auto; }
+
+      .view-pane[hidden] { display: none; }
+      .view-pane.is-active {
+        animation: viewfade 320ms var(--ease) both;
+      }
+      @keyframes viewfade {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: none; }
+      }
+
+      /* ---------- Integrated checkout (merchant preview) ---------- */
+      .device-frame-toggle {
+        display: inline-flex; gap: 4px;
+        padding: 3px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface-soft);
+      }
+      .device-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        height: 26px; padding: 0 12px;
+        border: 0; border-radius: 999px;
+        background: transparent;
+        color: var(--muted);
+        font-family: var(--font-mono);
+        font-size: 11px; letter-spacing: 0.02em;
+        cursor: pointer;
+        transition: color var(--t-fast) var(--ease-snap), background var(--t-fast) var(--ease-snap);
+      }
+      .device-chip:hover { color: var(--ink); }
+      .device-chip[aria-pressed="true"] {
+        background: var(--ink);
+        color: var(--bg);
+      }
+      .device-chip svg { width: 12px; height: 12px; }
+
+      .device-stage {
+        display: grid;
+        place-items: start center;
+        padding: 28px 20px;
+        background:
+          radial-gradient(1200px 320px at 50% -10%, rgba(67, 56, 202, 0.06), transparent 60%),
+          repeating-linear-gradient(0deg, transparent 0 23px, rgba(10, 10, 10, 0.025) 23px 24px),
+          var(--bg-deep);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: padding var(--t-base) var(--ease);
+      }
+
+      /* Desktop frame */
+      .device-desktop {
+        width: 100%;
+        max-width: 720px;
+        border: 1px solid var(--line-strong);
+        border-radius: 14px;
+        background: var(--surface);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        animation: viewfade 320ms var(--ease) both;
+      }
+      .device-bezel {
+        display: flex; align-items: center; gap: 8px;
+        padding: 9px 14px;
+        background: linear-gradient(180deg, #f7f6f1, #efede6);
+        border-bottom: 1px solid var(--line);
+      }
+      .device-bezel .traffic { display: flex; gap: 6px; }
+      .device-bezel .traffic span {
+        width: 9px; height: 9px; border-radius: 50%;
+        background: #d4d1c8;
+      }
+      .device-bezel .traffic span:nth-child(1) { background: #f4a4a4; }
+      .device-bezel .traffic span:nth-child(2) { background: #f4d68b; }
+      .device-bezel .traffic span:nth-child(3) { background: #a4d8b5; }
+      .device-url {
+        flex: 1;
+        height: 22px;
+        padding: 0 10px;
+        border: 1px solid var(--line); border-radius: 6px;
+        background: var(--surface-soft);
+        display: flex; align-items: center; gap: 6px;
+        font-family: var(--font-mono); font-size: 10.5px;
+        color: var(--quiet);
+      }
+      .device-url .lock { color: var(--success); font-size: 9px; }
+      .device-url .host { color: var(--ink-soft); }
+
+      /* Mobile frame */
+      .device-mobile {
+        width: 375px;
+        height: 750px;
+        padding: 12px 10px;
+        border-radius: 42px;
+        background: #1a1a1c;
+        box-shadow: 0 30px 60px -15px rgba(10, 10, 10, 0.35), 0 8px 16px rgba(10, 10, 10, 0.12);
+        position: relative;
+        overflow: hidden;
+        animation: viewfade 320ms var(--ease) both;
+      }
+      .device-mobile::before {
+        content: "";
+        position: absolute;
+        top: 18px; left: 50%;
+        transform: translateX(-50%);
+        width: 100px; height: 22px;
+        border-radius: 999px;
+        background: #050507;
+        z-index: 3;
+      }
+      .device-mobile .status-bar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 6px 24px 4px;
+        color: #fff;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        z-index: 2;
+        position: relative;
+      }
+      .device-mobile .status-bar .glyphs {
+        display: inline-flex; gap: 4px; align-items: center;
+        font-size: 9px; color: #d4d4d4;
+      }
+      .device-mobile .device-screen {
+        margin-top: 20px;
+        height: calc(100% - 48px);
+        border-radius: 28px;
+        background: var(--bg);
+        overflow: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--line-strong) transparent;
+      }
+      .device-mobile .device-screen::-webkit-scrollbar { width: 4px; }
+      .device-mobile .device-screen::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 2px; }
+
+      /* Merchant page */
+      .merchant {
+        display: grid;
+        background: var(--bg);
+      }
+      .merchant-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 20px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--line);
+      }
+      .merchant-brand {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-family: var(--font-display);
+        font-style: italic;
+        font-size: 17px;
+        font-weight: 500;
+        color: var(--ink);
+        letter-spacing: -0.02em;
+      }
+      .merchant-brand-mark {
+        display: grid; place-items: center;
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #c9a14d, #8a6a2a);
+        color: #fff7e0;
+        font-family: var(--font-mono);
+        font-size: 10px; font-weight: 600;
+        font-style: normal;
+      }
+      .merchant-back {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--quiet);
+      }
+      .merchant-back::before {
+        content: "← ";
+        color: var(--quiet);
+      }
+
+      .stepper {
+        display: flex; align-items: center;
+        gap: 6px;
+        padding: 14px 20px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--line);
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .stepper::-webkit-scrollbar { display: none; }
+      .step {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 0;
+        white-space: nowrap;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--quiet);
+        transition: color var(--t-base) var(--ease);
+      }
+      .step .num {
+        display: grid; place-items: center;
+        width: 18px; height: 18px;
+        border: 1px solid var(--line-strong); border-radius: 50%;
+        font-size: 10px;
+        background: var(--surface);
+        color: var(--quiet);
+        transition: background var(--t-base) var(--ease), color var(--t-base) var(--ease), border-color var(--t-base) var(--ease);
+      }
+      .step.is-active { color: var(--ink); }
+      .step.is-active .num { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+      .step.is-done { color: var(--success); }
+      .step.is-done .num { background: var(--success); color: #fff; border-color: var(--success); }
+      .step .arrow { color: var(--line-strong); font-size: 9px; }
+      .step:last-child .arrow { display: none; }
+
+      .merchant-body {
+        display: grid;
+        grid-template-columns: 1fr 240px;
+        gap: 16px;
+        padding: 20px;
+      }
+      .merchant-body.is-mobile {
+        grid-template-columns: 1fr;
+      }
+
+      .merchant-widgets {
+        display: grid;
+        gap: 14px;
+      }
+      .merchant-section {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+        overflow: hidden;
+        transition: border-color var(--t-base) var(--ease);
+      }
+      .merchant-section.is-active {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.08);
+      }
+      .merchant-section-head {
+        display: flex; align-items: baseline; justify-content: space-between;
+        padding: 12px 16px 0;
+      }
+      .merchant-section-title {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 500;
+        font-size: 15px;
+        letter-spacing: -0.015em;
+        color: var(--ink);
+      }
+      .merchant-section-tag {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--quiet);
+      }
+      .merchant-section-mount {
+        padding: 12px 16px 16px;
+        min-height: 80px;
+      }
+
+      .summary {
+        position: sticky;
+        top: 12px;
+        align-self: start;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+        padding: 14px;
+      }
+      .merchant-body.is-mobile .summary {
+        position: static;
+      }
+      .summary-title {
+        margin: 0 0 10px;
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--quiet);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .summary-product {
+        display: grid;
+        grid-template-columns: 44px 1fr;
+        gap: 10px;
+        padding-bottom: 12px;
+        border-bottom: 1px dashed var(--line);
+      }
+      .summary-thumb {
+        display: grid; place-items: center;
+        width: 44px; height: 44px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #f4d6a3, #d49960);
+        color: #4a2e10;
+        font-family: var(--font-display);
+        font-style: italic;
+        font-size: 16px;
+        font-weight: 500;
+      }
+      .summary-name {
+        font-family: var(--font-display);
+        font-weight: 500;
+        font-size: 14px;
+        color: var(--ink);
+        letter-spacing: -0.01em;
+        line-height: 1.25;
+      }
+      .summary-meta {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--quiet);
+        margin-top: 3px;
+      }
+      .summary-rows {
+        display: grid;
+        gap: 6px;
+        padding: 12px 0;
+      }
+      .summary-row {
+        display: flex; justify-content: space-between;
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        color: var(--muted);
+      }
+      .summary-row .v { color: var(--ink-soft); }
+      .summary-total {
+        display: flex; justify-content: space-between; align-items: baseline;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+      }
+      .summary-total .label {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--quiet);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .summary-total .value {
+        font-family: var(--font-display);
+        font-weight: 500;
+        font-size: 22px;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+      }
+      .summary-total .value .currency {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--quiet);
+        margin-left: 4px;
+        font-weight: 400;
+      }
+
+      .merchant-cta {
+        position: sticky;
+        bottom: 0;
+        display: grid;
+        gap: 8px;
+        padding: 14px 20px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, var(--surface) 30%);
+        border-top: 1px solid var(--line);
+        z-index: 4;
+      }
+      .merchant-cta .hint {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--warning);
+        opacity: 0;
+        transform: translateY(2px);
+        transition: opacity var(--t-base) var(--ease), transform var(--t-base) var(--ease);
+        min-height: 16px;
+      }
+      .merchant-cta .hint.visible {
+        opacity: 1;
+        transform: none;
+      }
+      .pay-cta {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        height: 50px;
+        padding: 0 20px;
+        border: 0;
+        border-radius: 12px;
+        background: var(--ink);
+        color: var(--bg);
+        font-family: var(--font-display);
+        font-weight: 500;
+        font-size: 15.5px;
+        letter-spacing: -0.01em;
+        cursor: pointer;
+        transition: background var(--t-fast) var(--ease-snap), transform var(--t-fast) var(--ease-snap), opacity var(--t-base) var(--ease);
+      }
+      .pay-cta .amount {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        opacity: 0.85;
+        font-weight: 500;
+      }
+      .pay-cta:hover:not(:disabled) {
+        background: var(--accent);
+        transform: translateY(-1px);
+      }
+      .pay-cta:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .merchant-foot {
+        display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px 20px 18px;
+        background: var(--bg-deep);
+      }
+      .merchant-foot .powered {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--quiet);
+      }
+      .merchant-foot .powered b {
+        color: var(--ink-soft);
+        font-weight: 600;
+      }
+      .merchant-foot .badges {
+        display: inline-flex; gap: 6px; flex-wrap: wrap;
+      }
+      .merchant-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 3px 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--ink-soft);
+        letter-spacing: 0.02em;
+      }
+      .merchant-badge .marker {
+        width: 4px; height: 4px; border-radius: 50%;
+        background: var(--success);
+      }
+
+      /* Mobile (inside device frame) tightening */
+      .device-mobile .merchant-head { padding: 12px 16px; }
+      .device-mobile .stepper { padding: 10px 16px; gap: 4px; }
+      .device-mobile .step { font-size: 10px; }
+      .device-mobile .step .num { width: 16px; height: 16px; font-size: 9px; }
+      .device-mobile .merchant-body { padding: 14px; gap: 12px; }
+      .device-mobile .merchant-section-mount { padding: 10px 12px 12px; min-height: 60px; }
+      .device-mobile .merchant-cta { padding: 10px 14px; }
+      .device-mobile .pay-cta { height: 46px; font-size: 14px; }
+      .device-mobile .merchant-foot { padding: 12px 14px 14px; }
+
       @media (max-width: 720px) {
         .topbar { gap: 12px; padding: 0 16px; height: 52px; flex-wrap: nowrap; }
         .nav { gap: 0; }
@@ -906,6 +1400,52 @@
 
         <!-- RIGHT: 4 mount targets + actions + code -->
         <section class="stage" aria-label="Live widget mounts">
+          <div class="view-toolbar" role="tablist" aria-label="Preview view">
+            <div class="view-tabs">
+              <button
+                class="view-tab"
+                type="button"
+                role="tab"
+                data-view-tab="individual"
+                aria-pressed="true"
+                aria-controls="view-individual"
+              >
+                <span class="glyph">▦</span>
+                <span>위젯별</span>
+              </button>
+              <button
+                class="view-tab"
+                type="button"
+                role="tab"
+                data-view-tab="integrated"
+                aria-pressed="false"
+                aria-controls="view-integrated"
+              >
+                <span class="glyph">⌘</span>
+                <span>통합 체크아웃</span>
+              </button>
+            </div>
+            <span class="toolbar-note" id="view-note">개별 위젯 검증 모드 · 4개 mount target</span>
+            <div class="toolbar-spacer"></div>
+            <div class="device-frame-toggle" id="device-toggle" role="group" aria-label="Device frame" hidden>
+              <button class="device-chip" type="button" data-device="desktop" aria-pressed="true">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+                  <rect x="1.5" y="2.5" width="13" height="9" rx="1"/>
+                  <path d="M5 14h6M8 11.5V14"/>
+                </svg>
+                <span>Desktop</span>
+              </button>
+              <button class="device-chip" type="button" data-device="mobile" aria-pressed="false">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+                  <rect x="4.5" y="1.5" width="7" height="13" rx="1.5"/>
+                  <circle cx="8" cy="12.5" r="0.6" fill="currentColor"/>
+                </svg>
+                <span>Mobile</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="view-pane is-active" id="view-individual" data-view="individual" role="tabpanel" aria-labelledby="view-tab-individual">
           <div class="mount-row">
             <article class="mount-card" id="card-address" data-mount="address">
               <div class="mount-head">
@@ -980,6 +1520,216 @@
             <button class="btn secondary" type="button" id="reset-session-btn">Reset session</button>
             <button class="btn danger" type="button" id="pan-test-btn">PAN guard test</button>
           </div>
+
+          </div><!-- /#view-individual -->
+
+          <div class="view-pane" id="view-integrated" data-view="integrated" role="tabpanel" aria-labelledby="view-tab-integrated" hidden>
+            <div class="device-stage" id="device-stage" data-device="desktop">
+              <!-- Desktop frame -->
+              <div class="device-desktop" id="device-desktop">
+                <div class="device-bezel" aria-hidden="true">
+                  <span class="traffic"><span></span><span></span><span></span></span>
+                  <span class="device-url">
+                    <span class="lock">●</span>
+                    <span class="host">aurum-beauty.shop</span>
+                    <span>/checkout</span>
+                  </span>
+                </div>
+
+                <div class="merchant" id="merchant-desktop">
+                  <header class="merchant-head">
+                    <span class="merchant-brand">
+                      <span class="merchant-brand-mark" aria-hidden="true">A</span>
+                      <span>Aurum Beauty</span>
+                    </span>
+                    <span class="merchant-back">cart</span>
+                  </header>
+
+                  <nav class="stepper" id="stepper-desktop" aria-label="Checkout progress">
+                    <span class="step is-active" data-step="address"><span class="num">1</span>배송지<span class="arrow">›</span></span>
+                    <span class="step" data-step="shipping"><span class="num">2</span>배송수단<span class="arrow">›</span></span>
+                    <span class="step" data-step="payment"><span class="num">3</span>결제<span class="arrow">›</span></span>
+                    <span class="step" data-step="agreement"><span class="num">4</span>약관<span class="arrow">›</span></span>
+                    <span class="step" data-step="done"><span class="num">5</span>완료</span>
+                  </nav>
+
+                  <div class="merchant-body" id="merchant-body-desktop">
+                    <div class="merchant-widgets">
+                      <section class="merchant-section" data-step-section="address">
+                        <header class="merchant-section-head">
+                          <h3 class="merchant-section-title">1 · 배송지</h3>
+                          <span class="merchant-section-tag">#oc-address-integrated</span>
+                        </header>
+                        <div class="merchant-section-mount" id="oc-address-integrated" role="region" aria-label="Address widget mount (integrated)">
+                          <div class="mount-empty">
+                            <div class="skeleton w-5-6"></div>
+                            <div class="skeleton w-3-4"></div>
+                          </div>
+                        </div>
+                      </section>
+
+                      <section class="merchant-section" data-step-section="shipping">
+                        <header class="merchant-section-head">
+                          <h3 class="merchant-section-title">2 · 배송수단</h3>
+                          <span class="merchant-section-tag">#oc-shipping-integrated</span>
+                        </header>
+                        <div class="merchant-section-mount" id="oc-shipping-integrated" role="region" aria-label="Shipping widget mount (integrated)">
+                          <div class="mount-empty">
+                            <div class="skeleton w-5-6"></div>
+                            <div class="skeleton w-3-4"></div>
+                          </div>
+                        </div>
+                      </section>
+
+                      <section class="merchant-section" data-step-section="payment">
+                        <header class="merchant-section-head">
+                          <h3 class="merchant-section-title">3 · 결제수단</h3>
+                          <span class="merchant-section-tag">#oc-payment-integrated</span>
+                        </header>
+                        <div class="merchant-section-mount" id="oc-payment-integrated" role="region" aria-label="Payment widget mount (integrated)">
+                          <div class="mount-empty">
+                            <div class="skeleton w-5-6"></div>
+                            <div class="skeleton w-3-4"></div>
+                          </div>
+                        </div>
+                      </section>
+
+                      <section class="merchant-section" data-step-section="agreement">
+                        <header class="merchant-section-head">
+                          <h3 class="merchant-section-title">4 · 약관</h3>
+                          <span class="merchant-section-tag">#oc-agreement-integrated</span>
+                        </header>
+                        <div class="merchant-section-mount" id="oc-agreement-integrated" role="region" aria-label="Agreement widget mount (integrated)">
+                          <div class="mount-empty">
+                            <div class="skeleton w-3-4"></div>
+                            <div class="skeleton w-1-2"></div>
+                          </div>
+                        </div>
+                      </section>
+                    </div>
+
+                    <aside class="summary" id="summary-desktop" aria-label="Order summary">
+                      <h4 class="summary-title">Order summary</h4>
+                      <div class="summary-product">
+                        <span class="summary-thumb" aria-hidden="true">G</span>
+                        <div>
+                          <div class="summary-name">Glow Serum 50ml</div>
+                          <div class="summary-meta">qty 1 · ships from Seoul</div>
+                        </div>
+                      </div>
+                      <div class="summary-rows">
+                        <div class="summary-row"><span>소계</span><span class="v" data-summary-subtotal>₩49,900</span></div>
+                        <div class="summary-row"><span>배송비</span><span class="v" data-summary-shipping>—</span></div>
+                        <div class="summary-row"><span>할인</span><span class="v">—</span></div>
+                      </div>
+                      <div class="summary-total">
+                        <span class="label">합계</span>
+                        <span class="value" data-summary-total>49,900<span class="currency">KRW</span></span>
+                      </div>
+                    </aside>
+                  </div>
+
+                  <div class="merchant-cta">
+                    <span class="hint" id="cta-hint-desktop" aria-live="polite">약관에 동의해주세요</span>
+                    <button class="pay-cta" type="button" data-integrated-pay disabled aria-disabled="true">
+                      <span>결제하기</span>
+                      <span class="amount" data-cta-amount>₩49,900</span>
+                    </button>
+                  </div>
+
+                  <footer class="merchant-foot">
+                    <span class="powered">이 결제는 <b>OpenCheckout</b> 위젯으로 처리됩니다</span>
+                    <span class="badges">
+                      <span class="merchant-badge"><span class="marker"></span>PAN 격리</span>
+                      <span class="merchant-badge"><span class="marker"></span>Shadow DOM</span>
+                      <span class="merchant-badge"><span class="marker"></span>ko / en</span>
+                    </span>
+                  </footer>
+                </div>
+              </div>
+
+              <!-- Mobile frame (hidden until toggled) -->
+              <div class="device-mobile" id="device-mobile" hidden>
+                <div class="status-bar" aria-hidden="true">
+                  <span id="mobile-clock">9:41</span>
+                  <span class="glyphs">●●● 5G ▮</span>
+                </div>
+                <div class="device-screen">
+                  <div class="merchant" id="merchant-mobile">
+                    <header class="merchant-head">
+                      <span class="merchant-brand">
+                        <span class="merchant-brand-mark" aria-hidden="true">A</span>
+                        <span>Aurum Beauty</span>
+                      </span>
+                      <span class="merchant-back">cart</span>
+                    </header>
+                    <nav class="stepper" id="stepper-mobile" aria-label="Checkout progress (mobile)">
+                      <span class="step is-active" data-step="address"><span class="num">1</span>주소<span class="arrow">›</span></span>
+                      <span class="step" data-step="shipping"><span class="num">2</span>배송<span class="arrow">›</span></span>
+                      <span class="step" data-step="payment"><span class="num">3</span>결제<span class="arrow">›</span></span>
+                      <span class="step" data-step="agreement"><span class="num">4</span>약관<span class="arrow">›</span></span>
+                      <span class="step" data-step="done"><span class="num">5</span>완료</span>
+                    </nav>
+                    <div class="merchant-body is-mobile">
+                      <aside class="summary" aria-label="Order summary (mobile)">
+                        <h4 class="summary-title">Order</h4>
+                        <div class="summary-product">
+                          <span class="summary-thumb" aria-hidden="true">G</span>
+                          <div>
+                            <div class="summary-name">Glow Serum 50ml</div>
+                            <div class="summary-meta">qty 1</div>
+                          </div>
+                        </div>
+                        <div class="summary-total">
+                          <span class="label">합계</span>
+                          <span class="value" data-summary-total-mobile>49,900<span class="currency">KRW</span></span>
+                        </div>
+                      </aside>
+                      <div class="merchant-widgets">
+                        <section class="merchant-section" data-step-section="address">
+                          <header class="merchant-section-head">
+                            <h3 class="merchant-section-title">1 · 배송지</h3>
+                          </header>
+                          <div class="merchant-section-mount" id="oc-address-mobile" data-mobile-mount="address" role="region" aria-label="Address widget (mobile)"></div>
+                        </section>
+                        <section class="merchant-section" data-step-section="shipping">
+                          <header class="merchant-section-head">
+                            <h3 class="merchant-section-title">2 · 배송수단</h3>
+                          </header>
+                          <div class="merchant-section-mount" id="oc-shipping-mobile" data-mobile-mount="shipping" role="region" aria-label="Shipping widget (mobile)"></div>
+                        </section>
+                        <section class="merchant-section" data-step-section="payment">
+                          <header class="merchant-section-head">
+                            <h3 class="merchant-section-title">3 · 결제수단</h3>
+                          </header>
+                          <div class="merchant-section-mount" id="oc-payment-mobile" data-mobile-mount="payment" role="region" aria-label="Payment widget (mobile)"></div>
+                        </section>
+                        <section class="merchant-section" data-step-section="agreement">
+                          <header class="merchant-section-head">
+                            <h3 class="merchant-section-title">4 · 약관</h3>
+                          </header>
+                          <div class="merchant-section-mount" id="oc-agreement-mobile" data-mobile-mount="agreement" role="region" aria-label="Agreement widget (mobile)"></div>
+                        </section>
+                      </div>
+                    </div>
+                    <div class="merchant-cta">
+                      <span class="hint" id="cta-hint-mobile" aria-live="polite">약관에 동의해주세요</span>
+                      <button class="pay-cta" type="button" data-integrated-pay disabled aria-disabled="true">
+                        <span>결제하기</span>
+                        <span class="amount" data-cta-amount-mobile>₩49,900</span>
+                      </button>
+                    </div>
+                    <footer class="merchant-foot">
+                      <span class="powered">powered by <b>OpenCheckout</b></span>
+                      <span class="badges">
+                        <span class="merchant-badge"><span class="marker"></span>PAN 격리</span>
+                      </span>
+                    </footer>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div><!-- /#view-integrated -->
 
           <article class="panel code-panel" aria-label="Integration code">
             <div class="panel-head">
@@ -1061,6 +1811,9 @@
       let sdk = null;
       let widgets = null;
       const mounted = { address: null, shipping: null, payment: null, agreement: null };
+      const mountedIntegrated = { address: null, shipping: null, payment: null, agreement: null };
+      let activeView = "individual"; // "individual" | "integrated"
+      let activeDevice = "desktop";  // "desktop" | "mobile"
       let logCount = 0;
       const allLogEntries = [];
       const sessionState = {
@@ -1068,6 +1821,13 @@
         address: null, shipping: null, payment: null,
         agreement: false, status: "idle",
       };
+      // Mock currency formatter — uses the live currency from config
+      function fmtMoney(value, currency) {
+        const c = currency || "KRW";
+        const symbol = c === "KRW" ? "₩" : c === "USD" ? "$" : c === "JPY" ? "¥" : "";
+        const n = Number(value || 0).toLocaleString();
+        return symbol ? `${symbol}${n}` : `${n} ${c}`;
+      }
 
       // Fill build timestamp (page render time as a proxy)
       const now = new Date();
@@ -1128,10 +1888,25 @@
           renderEmpty($(`oc-${k}`), `${k} widget mount pending`);
           setMountedFlag(k, false);
         }
+        for (const k of Object.keys(mountedIntegrated)) {
+          if (mountedIntegrated[k]) {
+            try { mountedIntegrated[k].destroy(); } catch {}
+            mountedIntegrated[k] = null;
+          }
+          const tgt = integratedTarget(k);
+          if (tgt) renderEmpty(tgt, `${k} widget mount pending`);
+        }
+        resetStepper();
+        updateCta();
         widgets = null;
         sessionStatus.textContent = "unmounted";
         sessionStatus.className = "panel-meta";
         updateState({ status: "idle", address: null, shipping: null, payment: null, agreement: false });
+      }
+
+      function integratedTarget(kind) {
+        const id = activeDevice === "mobile" ? `oc-${kind}-mobile` : `oc-${kind}-integrated`;
+        return document.getElementById(id);
       }
 
       function resetSession() {
@@ -1169,26 +1944,70 @@
             pulseCard(k);
           }
 
+          // Second mount set: integrated merchant preview (target swaps with active device)
+          mountIntegratedSet();
+
           mounted.address.on("addressSelect", (sel) => {
             updateState({ address: `${sel.country} ${sel.zipCode || ""}`.trim() });
             pulseCard("address");
+            advanceStepper("address");
             log("address", "addressSelect", sel);
           });
           mounted.shipping.on("methodSelect", (m) => {
             updateState({ shipping: `${m.method} (${m.amount.value.toLocaleString()} ${m.amount.currency})` });
             pulseCard("shipping");
+            advanceStepper("shipping");
+            updateSummaryShipping(m);
             log("shipping", "methodSelect", m);
           });
           mounted.payment.on("paymentMethodSelect", (code) => {
             updateState({ payment: code });
             pulseCard("payment");
+            advanceStepper("payment");
             log("payment", "paymentMethodSelect", { code });
           });
           mounted.agreement.on("agreementStatusChange", (agreed) => {
             updateState({ agreement: !!agreed });
             pulseCard("agreement");
+            advanceStepper("agreement");
+            updateCta();
             log("agreement", "agreementStatusChange", { agreed });
           });
+
+          // Mirror events from integrated mounts (so the merchant frame is interactive too)
+          if (mountedIntegrated.address) {
+            mountedIntegrated.address.on("addressSelect", (sel) => {
+              updateState({ address: `${sel.country} ${sel.zipCode || ""}`.trim() });
+              advanceStepper("address");
+              log("address", "addressSelect", sel);
+            });
+          }
+          if (mountedIntegrated.shipping) {
+            mountedIntegrated.shipping.on("methodSelect", (m) => {
+              updateState({ shipping: `${m.method} (${m.amount.value.toLocaleString()} ${m.amount.currency})` });
+              advanceStepper("shipping");
+              updateSummaryShipping(m);
+              log("shipping", "methodSelect", m);
+            });
+          }
+          if (mountedIntegrated.payment) {
+            mountedIntegrated.payment.on("paymentMethodSelect", (code) => {
+              updateState({ payment: code });
+              advanceStepper("payment");
+              log("payment", "paymentMethodSelect", { code });
+            });
+          }
+          if (mountedIntegrated.agreement) {
+            mountedIntegrated.agreement.on("agreementStatusChange", (agreed) => {
+              updateState({ agreement: !!agreed });
+              advanceStepper("agreement");
+              updateCta();
+              log("agreement", "agreementStatusChange", { agreed });
+            });
+          }
+
+          updateSummaryTotals(c);
+          updateCta();
 
           sessionStatus.textContent = "mounted";
           sessionStatus.className = "panel-meta status-mounted";
@@ -1444,10 +2263,177 @@
 
       function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
+      // ---------- Integrated checkout: mounts + frame swap ----------
+      function mountIntegratedSet() {
+        if (!widgets) return;
+        // Tear down any existing integrated mounts before re-rendering
+        for (const k of Object.keys(mountedIntegrated)) {
+          if (mountedIntegrated[k]) {
+            try { mountedIntegrated[k].destroy(); } catch {}
+            mountedIntegrated[k] = null;
+          }
+        }
+        const suffix = activeDevice === "mobile" ? "-mobile" : "-integrated";
+        try {
+          mountedIntegrated.address   = widgets.renderAddress({ selector: `#oc-address${suffix}` });
+          mountedIntegrated.shipping  = widgets.renderShipping({ selector: `#oc-shipping${suffix}` });
+          mountedIntegrated.payment   = widgets.renderPayment({ selector: `#oc-payment${suffix}` });
+          mountedIntegrated.agreement = widgets.renderAgreement({ selector: `#oc-agreement${suffix}` });
+        } catch (err) {
+          log("error", "integrated:mount-failed", { message: String(err && err.message) });
+        }
+      }
+
+      function setActiveView(view) {
+        if (view === activeView) return;
+        activeView = view;
+        document.querySelectorAll("[data-view-tab]").forEach((b) => {
+          b.setAttribute("aria-pressed", String(b.dataset.viewTab === view));
+        });
+        document.querySelectorAll(".view-pane").forEach((p) => {
+          const match = p.dataset.view === view;
+          p.hidden = !match;
+          p.classList.toggle("is-active", match);
+        });
+        const note = $("view-note");
+        if (note) {
+          note.textContent = view === "integrated"
+            ? "머천트 결제 페이지 프리뷰 · 4개 위젯 통합"
+            : "개별 위젯 검증 모드 · 4개 mount target";
+        }
+        const dt = $("device-toggle");
+        if (dt) dt.hidden = view !== "integrated";
+      }
+
+      function setActiveDevice(device) {
+        if (device === activeDevice) return;
+        activeDevice = device;
+        document.querySelectorAll("[data-device]").forEach((b) => {
+          if (b.tagName === "BUTTON") b.setAttribute("aria-pressed", String(b.dataset.device === device));
+        });
+        const desk = $("device-desktop");
+        const mob = $("device-mobile");
+        if (desk) desk.hidden = device !== "desktop";
+        if (mob) mob.hidden = device !== "mobile";
+        const stage = $("device-stage");
+        if (stage) stage.dataset.device = device;
+        // Re-mount integrated widgets onto the now-visible frame
+        if (widgets) mountIntegratedSet();
+        updateCta();
+      }
+
+      // Stepper, summary, CTA helpers — sync both desktop & mobile copies
+      const STEP_ORDER = ["address", "shipping", "payment", "agreement", "done"];
+      let lastStep = "address";
+
+      function advanceStepper(currentKey) {
+        lastStep = currentKey;
+        const idx = STEP_ORDER.indexOf(currentKey);
+        document.querySelectorAll("#stepper-desktop .step, #stepper-mobile .step").forEach((el) => {
+          const k = el.dataset.step;
+          const j = STEP_ORDER.indexOf(k);
+          el.classList.toggle("is-active", j === idx);
+          el.classList.toggle("is-done", j !== -1 && j < idx);
+        });
+      }
+
+      function resetStepper() {
+        lastStep = "address";
+        document.querySelectorAll("#stepper-desktop .step, #stepper-mobile .step").forEach((el) => {
+          el.classList.toggle("is-active", el.dataset.step === "address");
+          el.classList.remove("is-done");
+        });
+      }
+
+      function updateSummaryTotals(c) {
+        const cfg = c || readConfig();
+        const cur = cfg.currency || "KRW";
+        const subtotal = cfg.amount;
+        const subtotalStr = fmtMoney(subtotal, cur);
+        document.querySelectorAll("[data-summary-subtotal]").forEach((el) => { el.textContent = subtotalStr; });
+        document.querySelectorAll("[data-summary-total]").forEach((el) => {
+          el.innerHTML = `${Number(subtotal).toLocaleString()}<span class="currency">${cur}</span>`;
+        });
+        document.querySelectorAll("[data-summary-total-mobile]").forEach((el) => {
+          el.innerHTML = `${Number(subtotal).toLocaleString()}<span class="currency">${cur}</span>`;
+        });
+        document.querySelectorAll("[data-cta-amount], [data-cta-amount-mobile]").forEach((el) => {
+          el.textContent = subtotalStr;
+        });
+      }
+
+      function updateSummaryShipping(method) {
+        if (!method || !method.amount) return;
+        const txt = fmtMoney(method.amount.value, method.amount.currency);
+        document.querySelectorAll("[data-summary-shipping]").forEach((el) => { el.textContent = txt; });
+      }
+
+      function updateCta() {
+        const enabled = !!widgets && sessionState.agreement === true;
+        document.querySelectorAll("[data-integrated-pay]").forEach((btn) => {
+          btn.disabled = !enabled;
+          btn.setAttribute("aria-disabled", String(!enabled));
+        });
+        const hint = !widgets
+          ? "먼저 위젯을 마운트해주세요"
+          : sessionState.agreement
+            ? ""
+            : "약관에 동의해주세요";
+        document.querySelectorAll("#cta-hint-desktop, #cta-hint-mobile").forEach((el) => {
+          el.textContent = hint;
+          el.classList.toggle("visible", !!hint);
+        });
+      }
+
+      async function payIntegrated() {
+        if (!widgets) {
+          log("error", "requestPayment:no-session", { hint: "먼저 마운트하세요" });
+          return;
+        }
+        if (!sessionState.agreement) {
+          log("error", "requestPayment:blocked", { reason: "agreement-not-checked" });
+          return;
+        }
+        try {
+          await widgets.requestPayment({
+            successUrl: location.origin + "/success",
+            failUrl: location.origin + "/fail",
+          });
+          updateState({ status: "redirected" });
+          advanceStepper("done");
+          log("session", "requestPayment:redirected", { source: "integrated", mock: true, view: activeView, device: activeDevice });
+        } catch (err) {
+          log("error", "requestPayment:failed", { message: String(err?.message || err) });
+        }
+      }
+
+      // Mobile clock — write once on load
+      (function tickMobileClock() {
+        const el = $("mobile-clock");
+        if (!el) return;
+        const d = new Date();
+        const hh = String(d.getHours()).padStart(2, "0");
+        const mm = String(d.getMinutes()).padStart(2, "0");
+        el.textContent = `${hh}:${mm}`;
+      })();
+
       // ---------- Wire events ----------
       form.addEventListener("submit", mountAll);
-      form.addEventListener("input", renderCode);
-      form.addEventListener("change", renderCode);
+      form.addEventListener("input", () => { renderCode(); updateSummaryTotals(); });
+      form.addEventListener("change", () => { renderCode(); updateSummaryTotals(); });
+
+      // View tabs (Individual / Integrated)
+      document.querySelectorAll("[data-view-tab]").forEach((btn) => {
+        btn.addEventListener("click", () => setActiveView(btn.dataset.viewTab));
+      });
+      // Device chips (Desktop / Mobile) — only meaningful in integrated view
+      document.querySelectorAll("#device-toggle [data-device]").forEach((btn) => {
+        btn.addEventListener("click", () => setActiveDevice(btn.dataset.device));
+      });
+      // Integrated pay CTA(s)
+      document.querySelectorAll("[data-integrated-pay]").forEach((btn) => {
+        btn.addEventListener("click", payIntegrated);
+      });
       $("unmount-btn").addEventListener("click", unmountAll);
       $("remount-btn").addEventListener("click", () => mountAll());
       $("reset-session-btn").addEventListener("click", resetSession);
@@ -1497,6 +2483,8 @@
       });
 
       renderCode();
+      updateSummaryTotals();
+      updateCta();
     </script>
   </body>
 </html>

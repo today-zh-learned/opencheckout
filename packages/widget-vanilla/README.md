@@ -93,8 +93,23 @@ CDN 사용:
 |------|-------|---------|
 | `AddressWidget` | `"addressSelect"` | `{ country: string; zip: string; line1: string }` |
 | `ShippingWidget` | `"methodSelect"` | `{ carrier: string; rate: number; currency: "KRW" }` |
-| `PaymentWidget` | `"paymentMethodSelect"` | `string` (method code: `"card"` \| `"transfer"` \| `"virtual-account"` \| `"foreign-card"`) |
+| `PaymentWidget` | `"paymentMethodSelect"` | `string` (method code: `"card"` \| `"transfer"` \| `"virtual-account"` \| `"foreign-card"` \| `"easy-pay"`) |
+| `PaymentWidget` | `"installmentChange"` | `number` (개월수, 0 = 일시불). KR 카드 선택 시에만 emit |
+| `PaymentWidget` | `"bankSelect"` | `string` (가상계좌 은행 코드, 예: `"shinhan"`, `"kb"`) |
+| `PaymentWidget` | `"easyPaySelect"` | `string` (간편결제 브랜드 코드, 기본: `"paypal"`) |
 | `AgreementWidget` | `"agreementStatusChange"` | `boolean` |
+
+### PaymentWidget 옵션
+
+`renderPayment({ ... })`에 다음 옵션을 전달할 수 있습니다.
+
+| 옵션 | 타입 | 기본값 | 설명 |
+|------|------|--------|------|
+| `selector` | `string` | — | 마운트 타깃 |
+| `variantKey` | `string?` | — | A/B 식별자 |
+| `methods` | `readonly string[]?` | 국가별 자동 | 노출할 method 코드 화이트리스트. 미지정 시 buyerCountry 기준 자동 (KR: card·transfer·virtual-account·easy-pay / intl: card·foreign-card·easy-pay) |
+| `easyPayBrands` | `readonly string[]?` | `["paypal"]` | 간편결제 브랜드 칩. 예: `["paypal", "other"]` |
+| `installmentMaxMonths` | `number?` | `12` | KR 카드 할부 최대 개월수 (2-24 사이로 clamp) |
 
 **예**:
 
@@ -148,9 +163,9 @@ import {
 
 ## 번들 크기
 
-ESM 빌드: **11.77 KB** (raw) / **3.87 KB** (gzipped)
+ESM 빌드 (docs 페이지 자산 기준): **94.7 KB** (raw) / **20.7 KB** (gzipped)
 
-25 KB 예산 범위 내.
+25 KB gzipped 예산 범위 내.
 
 ## 링크
 

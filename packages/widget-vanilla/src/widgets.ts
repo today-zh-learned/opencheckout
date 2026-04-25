@@ -30,6 +30,9 @@ export type RenderShippingOptions = {
 export type RenderPaymentOptions = {
   readonly selector: string;
   readonly variantKey?: string;
+  readonly methods?: readonly string[];
+  readonly easyPayBrands?: readonly string[];
+  readonly installmentMaxMonths?: number;
 };
 
 export type RenderAgreementOptions = {
@@ -123,6 +126,11 @@ export function createWidgets(init: {
       assertInputSafe(p);
       const w = mountPaymentWidget(p.selector, state, {
         ...(p.variantKey !== undefined ? { variantKey: p.variantKey } : {}),
+        ...(p.methods !== undefined ? { methods: p.methods } : {}),
+        ...(p.easyPayBrands !== undefined ? { easyPayBrands: p.easyPayBrands } : {}),
+        ...(p.installmentMaxMonths !== undefined
+          ? { installmentMaxMonths: p.installmentMaxMonths }
+          : {}),
       });
       mounted.push(w);
       return w;

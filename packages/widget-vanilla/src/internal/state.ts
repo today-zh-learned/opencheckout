@@ -29,7 +29,12 @@ export type ShippingSelection = {
   readonly currency: string;
 };
 
-export type PaymentMethodCode = "card" | "transfer" | "virtual-account" | "foreign-card";
+export type PaymentMethodCode =
+  | "card"
+  | "transfer"
+  | "virtual-account"
+  | "foreign-card"
+  | "easy-pay";
 
 export type WidgetBusMap = {
   "amount:change": Money;
@@ -37,6 +42,9 @@ export type WidgetBusMap = {
   "address:change": AddressSelection;
   "shipping:change": ShippingSelection;
   "payment:change": PaymentMethodCode | string;
+  "payment:installment": number;
+  "payment:bank": string;
+  "payment:easyPay": string;
   "agreement:change": boolean;
 };
 
@@ -46,6 +54,9 @@ export type SessionState = {
   addressSelected: AddressSelection | undefined;
   shippingSelected: ShippingSelection | undefined;
   paymentSelected: string | undefined;
+  paymentInstallment: number;
+  paymentBankCode: string | undefined;
+  paymentEasyPayBrand: string | undefined;
   agreementChecked: boolean;
   locale: Locale;
   customerKey: string;
@@ -66,6 +77,9 @@ export function createSessionState(init: {
     addressSelected: undefined,
     shippingSelected: undefined,
     paymentSelected: undefined,
+    paymentInstallment: 0,
+    paymentBankCode: undefined,
+    paymentEasyPayBrand: undefined,
     agreementChecked: false,
     locale: init.locale,
     customerKey: init.customerKey,
