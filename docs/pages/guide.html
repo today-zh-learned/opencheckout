@@ -1,0 +1,1867 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenCheckout · Integration Guide</title>
+    <meta name="description" content="OpenCheckout SDK 통합 가이드. load(), widgets(), renderAddress/Shipping/Payment/Agreement(), requestPayment()까지 단계별 레퍼런스." />
+    <link rel="canonical" href="./guide.html" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" />
+    <style>
+      /* =============================================================
+         OpenCheckout Guide — developer reference, 2-pane layout
+         Type:  Fraunces (display), Instrument Sans (UI), JetBrains Mono (code)
+         Grid:  4px base, 1440px max, sticky sidebar
+         ============================================================= */
+      :root {
+        color-scheme: light;
+        --bg: #f6f5f1;
+        --bg-deep: #efede6;
+        --surface: #ffffff;
+        --surface-soft: #faf9f5;
+        --surface-alt: #f1efe8;
+        --ink: #0a0a0a;
+        --ink-soft: #2a2a2a;
+        --muted: #5b5b5b;
+        --quiet: #8e8b82;
+        --line: #e8e6e0;
+        --line-strong: #d4d1c8;
+        --line-faint: #f0eee7;
+        --accent: #4338ca;
+        --accent-strong: #3730a3;
+        --accent-soft: #eef0fe;
+        --accent-faint: #f6f7ff;
+        --success: #047857;
+        --success-soft: #ecfdf5;
+        --warning: #b45309;
+        --warning-soft: #fef3c7;
+        --danger: #b91c1c;
+        --danger-soft: #fef2f2;
+        --code-bg: #0d0d0e;
+        --code-bg-2: #18181b;
+        --code-line: #27272a;
+        --code-fg: #e4e4e7;
+        --code-dim: #71717a;
+        --shadow-sm: 0 1px 2px rgba(10,10,10,.04);
+        --shadow-md: 0 4px 12px rgba(10,10,10,.04), 0 1px 2px rgba(10,10,10,.04);
+        --shadow-lg: 0 24px 48px -12px rgba(10,10,10,.08), 0 4px 8px rgba(10,10,10,.04);
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 16px;
+        --ease: cubic-bezier(.22,1,.36,1);
+        --ease-snap: cubic-bezier(.4,0,.2,1);
+        --t-fast: 140ms;
+        --t-base: 220ms;
+        --font-display: "Fraunces","Iowan Old Style","Georgia",serif;
+        --font-ui: "Instrument Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+        --font-mono: "JetBrains Mono","SFMono-Regular","Cascadia Code",Consolas,monospace;
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #0d0d0e; --bg-deep: #08080a;
+        --surface: #18181b; --surface-soft: #1f1f23; --surface-alt: #27272a;
+        --ink: #fafafa; --ink-soft: #e4e4e7; --muted: #a1a1aa; --quiet: #71717a;
+        --line: #27272a; --line-strong: #3f3f46; --line-faint: #1f1f23;
+        --accent: #818cf8; --accent-strong: #a5b4fc;
+        --accent-soft: #1e1b4b; --accent-faint: #18162b;
+      }
+      * { box-sizing: border-box; }
+      *::selection { background: var(--accent-soft); color: var(--accent-strong); }
+      html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+      body {
+        margin: 0; min-height: 100vh;
+        background: var(--bg); color: var(--ink);
+        font-family: var(--font-ui); font-size: 15px; line-height: 1.6;
+        font-feature-settings: "ss01","cv11";
+        animation: fadein 400ms var(--ease) both;
+      }
+      @keyframes fadein { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:none; } }
+      @media (prefers-reduced-motion:reduce) {
+        *,*::before,*::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+      }
+      a { color: var(--ink); text-decoration: none; }
+      button { font-family: inherit; cursor: pointer; }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+      /* ---------- Topbar ---------- */
+      .topbar {
+        position: sticky; top: 0; z-index: 50;
+        display: flex; align-items: center; gap: 32px;
+        height: 56px;
+        padding: 0 max(20px, calc((100vw - 1440px)/2 + 24px));
+        background: rgba(246,245,241,.88);
+        backdrop-filter: saturate(160%) blur(14px);
+        -webkit-backdrop-filter: saturate(160%) blur(14px);
+        border-bottom: 1px solid var(--line);
+      }
+      .brand {
+        display: flex; align-items: center; gap: 10px;
+        color: var(--ink); font-weight: 600;
+        font-family: var(--font-display); font-size: 17px; letter-spacing: -.02em;
+      }
+      .brand-mark {
+        display: grid; width: 26px; height: 26px; border-radius: 7px;
+        background: var(--ink); color: var(--bg);
+        font-family: var(--font-mono); font-size: 13px; font-weight: 600; place-items: center;
+      }
+      .nav { display: flex; gap: 2px; }
+      .nav a {
+        padding: 7px 11px; border-radius: 7px;
+        color: var(--muted); font-size: 13.5px; font-weight: 500;
+        transition: color var(--t-fast) var(--ease-snap), background var(--t-fast) var(--ease-snap);
+      }
+      .nav a:hover { color: var(--ink); background: var(--surface-alt); }
+      .nav a[aria-current="page"] { color: var(--ink); background: var(--surface-alt); }
+      .top-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+      .nav-toggle {
+        display: none; width: 34px; height: 34px;
+        border: 1px solid var(--line-strong); border-radius: 8px;
+        background: var(--surface); align-items: center; justify-content: center;
+      }
+      .nav-toggle span { display: block; width: 14px; height: 1.5px; background: var(--ink); position: relative; }
+      .nav-toggle span::before,.nav-toggle span::after { content:""; position:absolute; left:0; width:14px; height:1.5px; background:var(--ink); }
+      .nav-toggle span::before { top: -5px; } .nav-toggle span::after { top: 5px; }
+
+      /* ---------- Buttons ---------- */
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        height: 38px; padding: 0 16px;
+        border: 1px solid transparent; border-radius: 8px;
+        background: var(--ink); color: var(--bg);
+        font-size: 13.5px; font-weight: 500;
+        transition: background var(--t-fast) var(--ease-snap), color var(--t-fast) var(--ease-snap),
+          border-color var(--t-fast) var(--ease-snap), transform var(--t-fast) var(--ease-snap),
+          box-shadow var(--t-fast) var(--ease-snap);
+      }
+      .btn:hover { background: var(--ink-soft); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+      .btn:active { transform: translateY(0); }
+      .btn.secondary { background: var(--surface); color: var(--ink); border-color: var(--line-strong); }
+      .btn.secondary:hover { background: var(--surface-soft); border-color: var(--ink); }
+      .btn.ghost { background: transparent; color: var(--muted); }
+      .btn.ghost:hover { background: var(--surface-alt); color: var(--ink); transform: none; box-shadow: none; }
+      .btn.accent { background: var(--accent); color: #fff; }
+      .btn.accent:hover { background: var(--accent-strong); }
+      .btn.sm { height: 30px; padding: 0 12px; font-size: 12.5px; }
+      .btn.lg { height: 44px; padding: 0 20px; font-size: 14px; }
+      .btn .arrow { display: inline-block; transition: transform var(--t-fast) var(--ease-snap); }
+      .btn:hover .arrow { transform: translateX(2px); }
+
+      /* ---------- 2-pane shell ---------- */
+      .shell {
+        display: grid;
+        grid-template-columns: 240px minmax(0,1fr);
+        max-width: 1440px; margin: 0 auto;
+      }
+      @media (max-width: 960px) { .shell { grid-template-columns: 1fr; } }
+
+      /* ---------- Sidebar ---------- */
+      .sidebar {
+        position: sticky; top: 56px; align-self: start;
+        height: calc(100vh - 56px);
+        padding: 28px 16px 28px 24px;
+        border-right: 1px solid var(--line);
+        overflow-y: auto; scrollbar-width: thin;
+      }
+      .sidebar::-webkit-scrollbar { width: 4px; }
+      .sidebar::-webkit-scrollbar-thumb { background: var(--line-strong); }
+      @media (max-width: 960px) {
+        .sidebar {
+          position: fixed; top: 56px; left: 0;
+          width: 280px; height: calc(100vh - 56px);
+          background: var(--bg); z-index: 40;
+          transform: translateX(-100%);
+          transition: transform var(--t-base) var(--ease);
+        }
+        .sidebar.open { transform: translateX(0); box-shadow: var(--shadow-lg); }
+      }
+      .scrim {
+        display: none; position: fixed; inset: 56px 0 0 0;
+        background: rgba(10,10,10,.4); z-index: 35;
+      }
+      .sidebar.open ~ .scrim { display: block; }
+      .side-group { margin-bottom: 24px; }
+      .side-title {
+        margin: 0 8px 8px;
+        font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+        color: var(--quiet); text-transform: uppercase; letter-spacing: .08em;
+      }
+      .side-link {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 6px 10px; border-radius: 7px;
+        color: var(--ink-soft); font-size: 13px; font-weight: 500;
+        transition: color var(--t-fast) var(--ease-snap), background var(--t-fast) var(--ease-snap);
+      }
+      .side-link:hover { background: var(--surface-alt); color: var(--ink); }
+      .side-link.active {
+        background: var(--surface); color: var(--accent);
+        border-left: 2px solid var(--accent); padding-left: 8px;
+      }
+      .side-link .meta { font-family: var(--font-mono); font-size: 10px; color: var(--quiet); }
+      .side-sub {
+        display: block; padding: 4px 10px 4px 18px; border-radius: 5px;
+        color: var(--muted); font-size: 12px;
+        transition: color var(--t-fast) var(--ease-snap), background var(--t-fast) var(--ease-snap);
+      }
+      .side-sub:hover { background: var(--surface-alt); color: var(--ink); }
+      .side-sub.active { color: var(--accent); }
+
+      /* ---------- Main article ---------- */
+      .main { min-width: 0; padding: 0 max(20px,40px) 80px; }
+
+      /* ---------- Article headings ---------- */
+      .doc-section {
+        padding: 72px 0 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .doc-section:last-of-type { border-bottom: 0; }
+      .doc-section > h2 {
+        margin: 0 0 6px;
+        font-family: var(--font-display); font-weight: 500;
+        font-size: clamp(1.6rem,3vw,2.2rem);
+        line-height: 1.1; letter-spacing: -.035em;
+        color: var(--ink);
+        font-variation-settings: "opsz" 144;
+        scroll-margin-top: 72px;
+      }
+      .doc-section > h2 em { font-style: italic; color: var(--accent); font-weight: 400; }
+      .doc-section .section-lead {
+        max-width: 66ch; margin: 0 0 32px;
+        color: var(--muted); font-size: 15px; line-height: 1.7;
+      }
+      .doc-section h3 {
+        margin: 40px 0 12px;
+        font-family: var(--font-display); font-weight: 500;
+        font-size: 1.2rem; letter-spacing: -.02em;
+        color: var(--ink-soft);
+        scroll-margin-top: 72px;
+      }
+      .doc-section h4 {
+        margin: 28px 0 10px;
+        font-family: var(--font-mono); font-size: 11.5px; font-weight: 600;
+        color: var(--quiet); text-transform: uppercase; letter-spacing: .07em;
+      }
+      .doc-section p { margin: 0 0 16px; line-height: 1.7; color: var(--muted); }
+      .doc-section p strong { color: var(--ink); font-weight: 600; }
+
+      /* Anchor links on headings */
+      .doc-section h2 .anchor-link,
+      .doc-section h3 .anchor-link {
+        margin-left: 8px; opacity: 0; color: var(--quiet);
+        font-family: var(--font-ui); font-size: .75em; font-weight: 400;
+        transition: opacity var(--t-fast);
+      }
+      .doc-section h2:hover .anchor-link,
+      .doc-section h3:hover .anchor-link { opacity: 1; }
+
+      /* ---------- Parameter tables ---------- */
+      .param-table-wrap { overflow-x: auto; margin: 16px 0 28px; }
+      .param-table {
+        width: 100%; border-collapse: collapse;
+        border: 1px solid var(--line); border-radius: var(--radius-md);
+        font-size: 13.5px; background: var(--surface);
+        overflow: hidden;
+      }
+      .param-table th {
+        padding: 9px 14px; text-align: left;
+        background: var(--surface-soft);
+        font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+        color: var(--quiet); text-transform: uppercase; letter-spacing: .07em;
+        border-bottom: 1px solid var(--line);
+        position: sticky; top: 0;
+      }
+      .param-table td {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line-faint);
+        vertical-align: top; line-height: 1.55;
+      }
+      .param-table tr:last-child td { border-bottom: 0; }
+      .param-table tr:nth-child(even) td { background: var(--surface-soft); }
+      .param-table td.pname {
+        font-family: var(--font-mono); font-size: 12.5px;
+        color: var(--ink); white-space: nowrap;
+      }
+      .param-table td.pname .req {
+        margin-left: 4px; font-size: 10px;
+        color: var(--danger); vertical-align: 1px;
+      }
+      .param-table td.ptype {
+        font-family: var(--font-mono); font-size: 11.5px;
+        color: var(--accent-strong); white-space: nowrap;
+      }
+      .param-table td.pdesc { color: var(--muted); max-width: 34ch; }
+      .param-table td.pdefault {
+        font-family: var(--font-mono); font-size: 11.5px;
+        color: var(--quiet);
+      }
+
+      /* ---------- Code tabs ---------- */
+      .code-tabs { margin: 16px 0 28px; border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
+      .code-tab-bar {
+        display: flex; gap: 0;
+        background: var(--code-bg-2);
+        border-bottom: 1px solid var(--code-line);
+        overflow-x: auto; scrollbar-width: none;
+      }
+      .code-tab-bar::-webkit-scrollbar { display: none; }
+      .tab-btn {
+        flex-shrink: 0; padding: 9px 16px;
+        background: transparent; border: 0; border-bottom: 2px solid transparent;
+        color: var(--code-dim); font-family: var(--font-mono); font-size: 12px; font-weight: 500;
+        transition: color var(--t-fast), border-color var(--t-fast);
+      }
+      .tab-btn[data-tab="active"] {
+        color: var(--code-fg); border-bottom-color: var(--accent);
+      }
+      .tab-pane { display: none; }
+      .tab-pane[data-tab="active"] { display: block; }
+      .code-block {
+        position: relative;
+        background: var(--code-bg);
+        font-family: var(--font-mono); font-size: 12.5px;
+        line-height: 1.75; color: var(--code-fg);
+        padding: 18px 0; overflow-x: auto;
+        max-height: 520px; overflow-y: auto;
+      }
+      .code-block::-webkit-scrollbar { width: 6px; height: 6px; }
+      .code-block::-webkit-scrollbar-thumb { background: var(--code-line); border-radius: 3px; }
+      .code-ln {
+        display: grid; grid-template-columns: 44px 1fr; padding: 0 20px 0 0;
+      }
+      .code-ln:hover { background: rgba(255,255,255,.025); }
+      .code-ln .ln { text-align: right; padding-right: 16px; color: var(--code-dim); font-size: 11px; user-select: none; }
+      .code-ln .src { white-space: pre; }
+
+      /* Inline code */
+      code { font-family: var(--font-mono); font-size: .87em; padding: 1px 5px; background: var(--surface-alt); border-radius: 4px; color: var(--ink-soft); }
+      pre code { padding: 0; background: transparent; color: inherit; font-size: inherit; }
+
+      /* Syntax colours */
+      .kw { color: #c4b5fd; }
+      .fn { color: #7dd3fc; }
+      .str { color: #86efac; }
+      .nm { color: #fbbf24; }
+      .cm { color: #71717a; font-style: italic; }
+      .tg { color: #f9a8d4; }
+      .op { color: #94a3b8; }
+
+      /* Copy button */
+      .copy-btn {
+        position: absolute; top: 10px; right: 10px;
+        padding: 4px 10px; border: 1px solid var(--code-line); border-radius: 5px;
+        background: var(--code-bg-2); color: var(--code-dim);
+        font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+        transition: color var(--t-fast), border-color var(--t-fast);
+      }
+      .copy-btn:hover { color: var(--code-fg); border-color: var(--code-fg); }
+
+      /* ---------- Callout boxes ---------- */
+      .callout {
+        display: flex; gap: 14px; align-items: flex-start;
+        margin: 20px 0 28px; padding: 16px 18px;
+        border-radius: var(--radius-md); border-left: 3px solid;
+        font-size: 13.5px; line-height: 1.65;
+      }
+      .callout .callout-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+      .callout.info { background: var(--accent-faint); border-color: var(--accent); color: var(--accent-strong); }
+      .callout.warning { background: var(--warning-soft); border-color: var(--warning); color: var(--warning); }
+      .callout.danger { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+      .callout.success { background: var(--success-soft); border-color: var(--success); color: var(--success); }
+      .callout p { margin: 0; color: inherit; font-size: inherit; }
+      .callout strong { color: inherit; }
+
+      /* ---------- Section meta tag ---------- */
+      .section-tag {
+        display: inline-flex; align-items: center; gap: 6px;
+        margin-bottom: 12px;
+        font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+        color: var(--quiet); text-transform: uppercase; letter-spacing: .08em;
+      }
+      .section-tag .dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--accent); opacity: .6;
+      }
+
+      /* ---------- Overview comparison table ---------- */
+      .compare {
+        margin: 24px 0 32px; border: 1px solid var(--line);
+        border-radius: var(--radius-lg); overflow: hidden; background: var(--surface);
+      }
+      .compare-row {
+        display: grid; grid-template-columns: 1.5fr 1fr 1fr;
+        align-items: stretch;
+      }
+      .compare-row + .compare-row { border-top: 1px solid var(--line); }
+      .compare-row.head { background: var(--surface-soft); }
+      .compare-cell { padding: 14px 18px; font-size: 13.5px; }
+      .compare-cell.label {
+        font-family: var(--font-mono); font-size: 12px; color: var(--quiet);
+        background: var(--surface-soft); border-right: 1px solid var(--line);
+      }
+      .compare-row.head .compare-cell {
+        font-family: var(--font-display); font-weight: 500; font-size: 15px; color: var(--ink);
+      }
+      .compare-row.head .compare-cell.us { color: var(--accent); }
+      .compare-cell.us { background: var(--accent-faint); border-left: 1px solid var(--accent-soft); }
+      .chk { color: var(--success); }
+      .xcl { color: var(--danger); }
+
+      /* ---------- Quick-start annotated block ---------- */
+      .qs-wrap {
+        display: grid; grid-template-columns: minmax(0,1fr) minmax(0,.8fr);
+        gap: 24px; align-items: start; margin: 24px 0 32px;
+      }
+      @media (max-width: 900px) { .qs-wrap { grid-template-columns: 1fr; } }
+      .qs-annotations { list-style: none; margin: 0; padding: 0; }
+      .qs-annotations li {
+        display: flex; gap: 12px; align-items: flex-start;
+        padding: 10px 0; border-bottom: 1px solid var(--line-faint);
+        font-size: 13px; color: var(--muted); line-height: 1.55;
+      }
+      .qs-annotations li:last-child { border-bottom: 0; }
+      .qs-num {
+        flex-shrink: 0; display: grid; place-items: center;
+        width: 20px; height: 20px; border-radius: 50%;
+        background: var(--accent); color: #fff;
+        font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+      }
+      .qs-cta {
+        margin-top: 20px; padding: 14px 18px;
+        border: 1px solid var(--accent-soft); border-radius: var(--radius-md);
+        background: var(--accent-faint); display: flex; align-items: center; gap: 14px;
+      }
+      .qs-cta a { color: var(--accent); font-weight: 600; font-size: 13.5px; }
+      .qs-cta p { margin: 0; color: var(--muted); font-size: 12.5px; }
+
+      /* ---------- Event/Error sticky tables ---------- */
+      .table-wrap { overflow-x: auto; margin: 16px 0 28px; max-height: 480px; overflow-y: auto; }
+      .data-table {
+        width: 100%; border-collapse: collapse;
+        border: 1px solid var(--line); border-radius: var(--radius-md);
+        font-size: 13px; background: var(--surface);
+      }
+      .data-table thead th {
+        padding: 9px 14px; text-align: left;
+        background: var(--surface-soft); border-bottom: 1px solid var(--line);
+        font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+        color: var(--quiet); text-transform: uppercase; letter-spacing: .07em;
+        position: sticky; top: 0; z-index: 2;
+      }
+      .data-table td {
+        padding: 9px 14px; border-bottom: 1px solid var(--line-faint);
+        vertical-align: top; line-height: 1.5;
+      }
+      .data-table tr:last-child td { border-bottom: 0; }
+      .data-table tr:nth-child(even) td { background: var(--surface-soft); }
+      .data-table td.mono { font-family: var(--font-mono); font-size: 12px; color: var(--ink); white-space: nowrap; }
+      .data-table td.dim { color: var(--muted); }
+      .badge {
+        display: inline-block; padding: 2px 7px;
+        border-radius: 999px; font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+      }
+      .badge.addr { background: #ede9fe; color: #5b21b6; }
+      .badge.ship { background: #e0f2fe; color: #0369a1; }
+      .badge.pay  { background: #fef3c7; color: #92400e; }
+      .badge.agr  { background: #ecfdf5; color: #065f46; }
+
+      /* ---------- Footer ---------- */
+      footer.site {
+        padding: 48px 0 0;
+        border-top: 1px solid var(--line);
+      }
+      .footer-grid {
+        display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+        gap: 16px; padding: 0 0 32px;
+      }
+      .footer-meta .row {
+        display: flex; flex-wrap: wrap; gap: 20px;
+        font-family: var(--font-mono); font-size: 11.5px; color: var(--quiet);
+      }
+      .footer-meta .k { color: var(--quiet); }
+      .footer-meta a { color: var(--muted); border-bottom: 1px solid var(--line); }
+      .footer-meta a:hover { color: var(--ink); border-color: var(--ink); }
+      .footer-mark { font-family: var(--font-display); font-style: italic; font-size: 13px; color: var(--quiet); }
+
+      /* ---------- Mobile nav toggle ---------- */
+      @media (max-width: 960px) {
+        .nav-toggle { display: flex; }
+        .topbar { gap: 14px; }
+        .nav { display: none; }
+      }
+      @media (max-width: 720px) {
+        .topbar { padding: 0 16px; height: 52px; }
+        .main { padding: 0 16px 60px; }
+        .doc-section > h2 { font-size: 1.55rem; }
+      }
+
+      /* ---------- Print ---------- */
+      @media print {
+        .sidebar, .topbar, .scrim, .copy-btn, .nav-toggle { display: none !important; }
+        .shell { display: block; }
+        .main { padding: 0; }
+        .tab-pane { display: block !important; }
+        .code-tabs { border: 1px solid #ccc; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ===================== TOPBAR ===================== -->
+    <header class="topbar" role="banner">
+      <button class="nav-toggle" type="button" id="nav-toggle" aria-label="사이드바 열기/닫기" aria-expanded="false">
+        <span aria-hidden="true"></span>
+      </button>
+      <a class="brand" href="./index.html" aria-label="OpenCheckout 홈">
+        <span class="brand-mark" aria-hidden="true">OC</span>
+        <span>OpenCheckout</span>
+      </a>
+      <nav class="nav primary" aria-label="Primary navigation">
+        <a href="./index.html">Home</a>
+        <a href="./sandbox.html">Sandbox</a>
+        <a href="./guide.html" aria-current="page">Guide</a>
+        <a href="https://github.com/today-zh-learned/opencheckout">GitHub</a>
+      </nav>
+      <div class="top-actions">
+        <a class="btn secondary sm" href="https://github.com/today-zh-learned/opencheckout">GitHub</a>
+        <a class="btn accent sm" href="./sandbox.html">Sandbox 열기 <span class="arrow" aria-hidden="true">→</span></a>
+      </div>
+    </header>
+
+    <div class="shell">
+      <!-- ===================== SIDEBAR ===================== -->
+      <aside class="sidebar" id="sidebar" aria-label="가이드 섹션 탐색">
+        <div class="side-group">
+          <p class="side-title">시작하기</p>
+          <a class="side-link" href="#overview"><span>개요</span><span class="meta">01</span></a>
+          <a class="side-link" href="#quickstart"><span>5분 Quick start</span><span class="meta">02</span></a>
+        </div>
+        <div class="side-group">
+          <p class="side-title">초기화</p>
+          <a class="side-link" href="#initialize"><span>Initialize</span><span class="meta">03</span></a>
+          <a class="side-sub" href="#load">OpenCheckout.load()</a>
+          <a class="side-sub" href="#widgets-factory">instance.widgets()</a>
+          <a class="side-sub" href="#set-amount">setAmount()</a>
+          <a class="side-sub" href="#set-order">setOrder()</a>
+        </div>
+        <div class="side-group">
+          <p class="side-title">위젯 렌더링</p>
+          <a class="side-link" href="#render-address"><span>renderAddress</span><span class="meta">04</span></a>
+          <a class="side-link" href="#render-shipping"><span>renderShipping</span><span class="meta">05</span></a>
+          <a class="side-link" href="#render-payment"><span>renderPayment</span><span class="meta">06</span></a>
+          <a class="side-link" href="#render-agreement"><span>renderAgreement</span><span class="meta">07</span></a>
+        </div>
+        <div class="side-group">
+          <p class="side-title">결제 요청</p>
+          <a class="side-link" href="#request-payment"><span>requestPayment</span><span class="meta">08</span></a>
+        </div>
+        <div class="side-group">
+          <p class="side-title">레퍼런스</p>
+          <a class="side-link" href="#events-reference"><span>이벤트 전체 표</span><span class="meta">09</span></a>
+          <a class="side-link" href="#errors"><span>에러</span><span class="meta">10</span></a>
+          <a class="side-link" href="#pan-boundary"><span>PAN 경계</span><span class="meta">11</span></a>
+          <a class="side-link" href="#backend-preview"><span>백엔드 연동 (preview)</span><span class="meta">12</span></a>
+          <a class="side-link" href="#faq"><span>FAQ / Browser / 번들</span><span class="meta">13</span></a>
+        </div>
+      </aside>
+      <div class="scrim" id="scrim" aria-hidden="true"></div>
+
+      <!-- ===================== MAIN ===================== -->
+      <main class="main" id="main-content" role="main">
+
+        <!-- ===================== SECTION 1: OVERVIEW ===================== -->
+        <section class="doc-section" id="overview" aria-labelledby="h-overview">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>01 — Overview</span>
+          <h2 id="h-overview">OpenCheckout <em>개요</em><a class="anchor-link" href="#overview" aria-label="직접 링크">#</a></h2>
+          <p class="section-lead">OpenCheckout은 주소·배송·결제·약관 4개 위젯이 하나의 세션 버스를 공유하는 오픈소스 체크아웃 표면입니다. 키 없이 시작하고, 18줄로 통합이 완료됩니다.</p>
+
+          <h3 id="h-what-is">Widget-first 모델이란<a class="anchor-link" href="#h-what-is" aria-label="직접 링크">#</a></h3>
+          <p>전통적인 결제 SDK는 <em>어셈블리 모델</em>입니다. 개발자가 폼 HTML을 직접 작성하고, PG 스크립트를 삽입하며, 각 위젯 간 상태 동기화를 수동으로 관리합니다. OpenCheckout은 이와 반대입니다. 4개의 Shadow DOM 위젯이 공통 이벤트 버스(<code>EventBus&lt;WidgetBusMap&gt;</code>)를 통해 자동으로 상태를 공유하고, 국가 선택·우편번호 유효성·할부 옵션 같은 UX 로직은 SDK 내부에서 처리합니다.</p>
+
+          <h4>Widget-first vs. SDK 어셈블리 비교</h4>
+          <div class="compare" role="table" aria-label="Widget-first vs SDK 어셈블리 비교표">
+            <div class="compare-row head" role="row">
+              <div class="compare-cell label" role="columnheader"></div>
+              <div class="compare-cell" role="columnheader">SDK 어셈블리</div>
+              <div class="compare-cell us" role="columnheader">OpenCheckout (widget-first)</div>
+            </div>
+            <div class="compare-row" role="row">
+              <div class="compare-cell label" role="rowheader">통합 코드량</div>
+              <div class="compare-cell">100–300줄 (폼 마크업 포함)</div>
+              <div class="compare-cell us"><span class="chk">✓</span> 18줄 (HTML 5 + JS 13)</div>
+            </div>
+            <div class="compare-row" role="row">
+              <div class="compare-cell label" role="rowheader">위젯 간 상태 동기화</div>
+              <div class="compare-cell">개발자가 직접 관리</div>
+              <div class="compare-cell us"><span class="chk">✓</span> EventBus 자동 전파</div>
+            </div>
+            <div class="compare-row" role="row">
+              <div class="compare-cell label" role="rowheader">국가별 주소 폼</div>
+              <div class="compare-cell">미지원 또는 별도 라이브러리</div>
+              <div class="compare-cell us"><span class="chk">✓</span> 16개국 내장 schema</div>
+            </div>
+            <div class="compare-row" role="row">
+              <div class="compare-cell label" role="rowheader">PAN 격리</div>
+              <div class="compare-cell">PG 위임 (정도 다양)</div>
+              <div class="compare-cell us"><span class="chk">✓</span> assertPanFree 강제 (ADR-003)</div>
+            </div>
+            <div class="compare-row" role="row">
+              <div class="compare-cell label" role="rowheader">Shadow DOM 격리</div>
+              <div class="compare-cell"><span class="xcl">✗</span> 없음</div>
+              <div class="compare-cell us"><span class="chk">✓</span> 스타일 침투 차단</div>
+            </div>
+            <div class="compare-row" role="row">
+              <div class="compare-cell label" role="rowheader">번들 크기</div>
+              <div class="compare-cell">PG마다 상이</div>
+              <div class="compare-cell us"><span class="chk">✓</span> 23.1 KB gzipped</div>
+            </div>
+            <div class="compare-row" role="row">
+              <div class="compare-cell label" role="rowheader">로케일 지원</div>
+              <div class="compare-cell">제한적</div>
+              <div class="compare-cell us"><span class="chk">✓</span> ko · en · ja · zh-CN</div>
+            </div>
+          </div>
+
+          <h3 id="h-audience">대상 독자<a class="anchor-link" href="#h-audience" aria-label="직접 링크">#</a></h3>
+          <p>이 가이드는 한국 D2C(직접판매) 또는 국제배송 서비스에 체크아웃을 구현하는 프론트엔드·풀스택 개발자를 대상으로 합니다. HTML/JS 기초와 <code>async/await</code>에 익숙하면 충분합니다.</p>
+          <p>React, Vue 등의 컴포넌트 프레임워크에서도 동일한 Vanilla JS API를 그대로 사용합니다. Custom Element 레지스트리에 한 번만 등록되므로 SSR/hydration 환경에서는 <code>typeof window !== "undefined"</code> 가드 후 호출하세요.</p>
+        </section>
+
+        <!-- ===================== SECTION 2: QUICK START ===================== -->
+        <section class="doc-section" id="quickstart" aria-labelledby="h-quickstart">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>02 — Quick start</span>
+          <h2 id="h-quickstart">5분 Quick start<a class="anchor-link" href="#quickstart" aria-label="직접 링크">#</a></h2>
+          <p class="section-lead">CDN 한 줄과 JS 13줄로 체크아웃 전체를 완성합니다. 키 없이 <code>pk_test_...</code> 형식의 테스트 키만 있으면 됩니다.</p>
+
+          <div class="qs-wrap">
+            <div>
+              <div class="code-tabs" id="qs-tabs">
+                <div class="code-tab-bar">
+                  <button class="tab-btn" data-tab="active" data-tab-trigger data-target="qs-html">HTML</button>
+                  <button class="tab-btn" data-tab-trigger data-target="qs-npm">npm</button>
+                </div>
+                <div class="tab-pane" id="qs-html" data-tab="active">
+                  <div class="code-block" id="qs-html-code">
+                    <button class="copy-btn" data-copy="qs-html-code" aria-label="코드 복사">Copy</button>
+                    <div class="code-ln"><span class="ln">1</span><span class="src"><span class="tg">&lt;div</span> <span class="op">id=</span><span class="str">"address"</span><span class="tg">&gt;&lt;/div&gt;</span></span></div>
+                    <div class="code-ln"><span class="ln">2</span><span class="src"><span class="tg">&lt;div</span> <span class="op">id=</span><span class="str">"shipping"</span><span class="tg">&gt;&lt;/div&gt;</span></span></div>
+                    <div class="code-ln"><span class="ln">3</span><span class="src"><span class="tg">&lt;div</span> <span class="op">id=</span><span class="str">"payment"</span><span class="tg">&gt;&lt;/div&gt;</span></span></div>
+                    <div class="code-ln"><span class="ln">4</span><span class="src"><span class="tg">&lt;div</span> <span class="op">id=</span><span class="str">"agreement"</span><span class="tg">&gt;&lt;/div&gt;</span></span></div>
+                    <div class="code-ln"><span class="ln">5</span><span class="src"><span class="tg">&lt;button</span> <span class="op">id=</span><span class="str">"pay"</span><span class="tg">&gt;</span>결제하기<span class="tg">&lt;/button&gt;</span></span></div>
+                    <div class="code-ln"><span class="ln">6</span><span class="src"></span></div>
+                    <div class="code-ln"><span class="ln">7</span><span class="src"><span class="tg">&lt;script</span> <span class="op">type=</span><span class="str">"module"</span><span class="tg">&gt;</span></span></div>
+                    <div class="code-ln"><span class="ln">8</span><span class="src">  <span class="kw">import</span> { <span class="fn">OpenCheckout</span> } <span class="kw">from</span> <span class="str">"https://cdn.opencheckout.dev/v1"</span>;</span></div>
+                    <div class="code-ln"><span class="ln">9</span><span class="src"></span></div>
+                    <div class="code-ln"><span class="ln">10</span><span class="src">  <span class="kw">const</span> oc = <span class="kw">await</span> <span class="fn">OpenCheckout.load</span>({ <span class="op">publishableKey:</span> <span class="str">"pk_test_sandbox_demo001"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">11</span><span class="src">  <span class="kw">const</span> widgets = oc.<span class="fn">widgets</span>({ <span class="op">customerKey:</span> <span class="str">"ANONYMOUS"</span>, <span class="op">locale:</span> <span class="str">"ko"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">12</span><span class="src"></span></div>
+                    <div class="code-ln"><span class="ln">13</span><span class="src">  widgets.<span class="fn">setAmount</span>({ <span class="op">value:</span> <span class="nm">49900</span>, <span class="op">currency:</span> <span class="str">"KRW"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">14</span><span class="src">  widgets.<span class="fn">setOrder</span>({ <span class="op">id:</span> <span class="str">"order_abc"</span>, <span class="op">name:</span> <span class="str">"Glow Serum"</span>, <span class="op">buyerCountry:</span> <span class="str">"KR"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">15</span><span class="src"></span></div>
+                    <div class="code-ln"><span class="ln">16</span><span class="src">  widgets.<span class="fn">renderAddress</span>({ <span class="op">selector:</span> <span class="str">"#address"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">17</span><span class="src">  widgets.<span class="fn">renderShipping</span>({ <span class="op">selector:</span> <span class="str">"#shipping"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">18</span><span class="src">  widgets.<span class="fn">renderPayment</span>({ <span class="op">selector:</span> <span class="str">"#payment"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">19</span><span class="src">  widgets.<span class="fn">renderAgreement</span>({ <span class="op">selector:</span> <span class="str">"#agreement"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">20</span><span class="src"></span></div>
+                    <div class="code-ln"><span class="ln">21</span><span class="src">  document.<span class="fn">querySelector</span>(<span class="str">"#pay"</span>).<span class="fn">addEventListener</span>(<span class="str">"click"</span>, () =&gt;</span></div>
+                    <div class="code-ln"><span class="ln">22</span><span class="src">    widgets.<span class="fn">requestPayment</span>({</span></div>
+                    <div class="code-ln"><span class="ln">23</span><span class="src">      <span class="op">successUrl:</span> <span class="str">`${location.origin}/success`</span>,</span></div>
+                    <div class="code-ln"><span class="ln">24</span><span class="src">      <span class="op">failUrl:</span> <span class="str">`${location.origin}/fail`</span>,</span></div>
+                    <div class="code-ln"><span class="ln">25</span><span class="src">    }),</span></div>
+                    <div class="code-ln"><span class="ln">26</span><span class="src">  );</span></div>
+                    <div class="code-ln"><span class="ln">27</span><span class="src"><span class="tg">&lt;/script&gt;</span></span></div>
+                  </div>
+                </div>
+                <div class="tab-pane" id="qs-npm">
+                  <div class="code-block" id="qs-npm-code">
+                    <button class="copy-btn" data-copy="qs-npm-code" aria-label="코드 복사">Copy</button>
+                    <div class="code-ln"><span class="ln">1</span><span class="src"><span class="cm"># 패키지 설치</span></span></div>
+                    <div class="code-ln"><span class="ln">2</span><span class="src"><span class="fn">npm</span> install <span class="str">@opencheckout/widget</span></span></div>
+                    <div class="code-ln"><span class="ln">3</span><span class="src"></span></div>
+                    <div class="code-ln"><span class="ln">4</span><span class="src"><span class="cm">// main.ts</span></span></div>
+                    <div class="code-ln"><span class="ln">5</span><span class="src"><span class="kw">import</span> { <span class="fn">OpenCheckout</span> } <span class="kw">from</span> <span class="str">"@opencheckout/widget"</span>;</span></div>
+                    <div class="code-ln"><span class="ln">6</span><span class="src"></span></div>
+                    <div class="code-ln"><span class="ln">7</span><span class="src"><span class="kw">const</span> oc = <span class="kw">await</span> <span class="fn">OpenCheckout.load</span>({ <span class="op">publishableKey:</span> <span class="str">"pk_test_sandbox_demo001"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">8</span><span class="src"><span class="kw">const</span> widgets = oc.<span class="fn">widgets</span>({ <span class="op">customerKey:</span> <span class="str">"ANONYMOUS"</span>, <span class="op">locale:</span> <span class="str">"ko"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">9</span><span class="src">widgets.<span class="fn">setAmount</span>({ <span class="op">value:</span> <span class="nm">49900</span>, <span class="op">currency:</span> <span class="str">"KRW"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">10</span><span class="src">widgets.<span class="fn">setOrder</span>({ <span class="op">id:</span> <span class="str">"order_abc"</span>, <span class="op">name:</span> <span class="str">"Glow Serum"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">11</span><span class="src">widgets.<span class="fn">renderAddress</span>({ <span class="op">selector:</span> <span class="str">"#address"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">12</span><span class="src">widgets.<span class="fn">renderShipping</span>({ <span class="op">selector:</span> <span class="str">"#shipping"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">13</span><span class="src">widgets.<span class="fn">renderPayment</span>({ <span class="op">selector:</span> <span class="str">"#payment"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">14</span><span class="src">widgets.<span class="fn">renderAgreement</span>({ <span class="op">selector:</span> <span class="str">"#agreement"</span> });</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="qs-cta">
+                <div>
+                  <p>라이브로 즉시 확인하고 싶다면</p>
+                  <a href="./sandbox.html">Sandbox에서 실행해보기 →</a>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4>코드 주석</h4>
+              <ul class="qs-annotations">
+                <li><span class="qs-num">1</span><span>마운트 타깃 4개를 원하는 위치에 배치합니다. 순서는 자유입니다.</span></li>
+                <li><span class="qs-num">2</span><span><code>OpenCheckout.load()</code>는 <code>Promise</code>를 반환합니다. <code>await</code>로 완료를 기다립니다. <code>publishableKey</code> 형식: <code>pk_(test|live)_&lt;shard&gt;_&lt;random&gt;</code></span></li>
+                <li><span class="qs-num">3</span><span><code>widgets()</code>는 세션 버스를 생성합니다. 한 페이지에서 복수 인스턴스를 만들 수 있지만, 위젯을 공유하려면 동일한 <code>widgets</code> 참조를 사용해야 합니다.</span></li>
+                <li><span class="qs-num">4</span><span><code>setAmount()</code>와 <code>setOrder()</code>는 <strong>renderXxx 이전</strong>에 반드시 호출해야 합니다. 순서를 어기면 <code>OpenCheckoutValidationError</code>가 throw됩니다.</span></li>
+                <li><span class="qs-num">5</span><span>4개 renderXxx 호출은 각각 위젯 인스턴스를 반환합니다. 이벤트 구독이 필요하면 반환값에 <code>.on()</code>을 사용합니다.</span></li>
+                <li><span class="qs-num">6</span><span><code>requestPayment()</code>는 현재 v1에서 mock redirect입니다. 실제 PG 연동은 v1.0.1에서 제공될 예정입니다. 자세한 내용은 <a href="#request-payment">requestPayment 섹션</a>을 참고하세요.</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="callout info">
+            <span class="callout-icon" aria-hidden="true">i</span>
+            <p><strong>호출 순서</strong>: <code>load()</code> → <code>widgets()</code> → <code>setAmount()</code> + <code>setOrder()</code> → <code>renderXxx()</code> → <code>requestPayment()</code>. 이 순서를 지키지 않으면 <code>OpenCheckoutValidationError</code>가 throw됩니다.</p>
+          </div>
+        </section>
+
+        <!-- ===================== SECTION 3: INITIALIZE ===================== -->
+        <section class="doc-section" id="initialize" aria-labelledby="h-initialize">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>03 — Initialize</span>
+          <h2 id="h-initialize">Initialize<a class="anchor-link" href="#initialize" aria-label="직접 링크">#</a></h2>
+          <p class="section-lead">SDK를 사용하려면 <code>load()</code> → <code>widgets()</code> → <code>setAmount()</code> + <code>setOrder()</code> 세 단계를 순서대로 실행해야 합니다.</p>
+
+          <!-- load() -->
+          <h3 id="load">OpenCheckout.load()<a class="anchor-link" href="#load" aria-label="직접 링크">#</a></h3>
+          <p>게이트웨이 세션을 인증하고 <code>OpenCheckoutInstance</code>를 반환합니다. 페이지당 한 번만 호출하세요. 반환값은 <code>Promise</code>이므로 반드시 <code>await</code>해야 합니다.</p>
+
+          <h4>파라미터</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="load() 파라미터">
+              <thead>
+                <tr><th>이름</th><th>타입</th><th>기본값</th><th>설명</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>publishableKey</code><span class="req">*</span></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">머천트 공개 키. 형식: <code>pk_(test|live)_&lt;shard&gt;_&lt;random&gt;</code>. 형식 불일치 시 <code>OpenCheckoutValidationError</code> throw.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>gatewayUrl</code></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault"><code>"https://cloud.opencheckout.dev"</code></td>
+                  <td class="pdesc">게이트웨이 엔드포인트. self-host 배포 시에만 변경. http/https만 허용, 그 외 프로토콜은 <code>OpenCheckoutValidationError</code>.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p><strong>반환</strong>: <code>Promise&lt;OpenCheckoutInstance&gt;</code></p>
+
+          <div class="code-tabs">
+            <div class="code-tab-bar">
+              <button class="tab-btn" data-tab="active" data-tab-trigger data-target="load-html">HTML/CDN</button>
+              <button class="tab-btn" data-tab-trigger data-target="load-npm">npm / ESM</button>
+              <button class="tab-btn" data-tab-trigger data-target="load-react">React</button>
+            </div>
+            <div class="tab-pane" id="load-html" data-tab="active">
+              <div class="code-block" id="load-html-code">
+                <button class="copy-btn" data-copy="load-html-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="kw">import</span> { <span class="fn">OpenCheckout</span> } <span class="kw">from</span> <span class="str">"https://cdn.opencheckout.dev/v1"</span>;</span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src"></span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src"><span class="kw">const</span> oc = <span class="kw">await</span> <span class="fn">OpenCheckout.load</span>({</span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src">  <span class="op">publishableKey:</span> <span class="str">"pk_test_myshop_a1b2c3"</span>,</span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src">});</span></div>
+              </div>
+            </div>
+            <div class="tab-pane" id="load-npm">
+              <div class="code-block" id="load-npm-code">
+                <button class="copy-btn" data-copy="load-npm-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="kw">import</span> { <span class="fn">OpenCheckout</span> } <span class="kw">from</span> <span class="str">"@opencheckout/widget"</span>;</span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src"></span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src"><span class="kw">const</span> oc = <span class="kw">await</span> <span class="fn">OpenCheckout.load</span>({</span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src">  <span class="op">publishableKey:</span> <span class="str">"pk_test_myshop_a1b2c3"</span>,</span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src">});</span></div>
+              </div>
+            </div>
+            <div class="tab-pane" id="load-react">
+              <div class="code-block" id="load-react-code">
+                <button class="copy-btn" data-copy="load-react-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="kw">import</span> { <span class="fn">useEffect</span>, <span class="fn">useRef</span> } <span class="kw">from</span> <span class="str">"react"</span>;</span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src"><span class="kw">import</span> { <span class="fn">OpenCheckout</span> } <span class="kw">from</span> <span class="str">"@opencheckout/widget"</span>;</span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src"></span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src"><span class="kw">export function</span> <span class="fn">CheckoutPage</span>() {</span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src">  <span class="kw">const</span> widgetsRef = <span class="fn">useRef</span>(<span class="kw">null</span>);</span></div>
+                <div class="code-ln"><span class="ln">6</span><span class="src"></span></div>
+                <div class="code-ln"><span class="ln">7</span><span class="src">  <span class="fn">useEffect</span>(() =&gt; {</span></div>
+                <div class="code-ln"><span class="ln">8</span><span class="src">    <span class="kw">let</span> destroyed = <span class="kw">false</span>;</span></div>
+                <div class="code-ln"><span class="ln">9</span><span class="src">    <span class="fn">OpenCheckout.load</span>({ <span class="op">publishableKey:</span> <span class="str">"pk_test_myshop_a1b2c3"</span> })</span></div>
+                <div class="code-ln"><span class="ln">10</span><span class="src">      .<span class="fn">then</span>((oc) =&gt; {</span></div>
+                <div class="code-ln"><span class="ln">11</span><span class="src">        <span class="kw">if</span> (destroyed) <span class="kw">return</span>;</span></div>
+                <div class="code-ln"><span class="ln">12</span><span class="src">        widgetsRef.current = oc.<span class="fn">widgets</span>({ <span class="op">customerKey:</span> <span class="str">"ANONYMOUS"</span>, <span class="op">locale:</span> <span class="str">"ko"</span> });</span></div>
+                <div class="code-ln"><span class="ln">13</span><span class="src">      });</span></div>
+                <div class="code-ln"><span class="ln">14</span><span class="src">    <span class="kw">return</span> () =&gt; { destroyed = <span class="kw">true</span>; widgetsRef.current?.<span class="fn">destroy</span>(); };</span></div>
+                <div class="code-ln"><span class="ln">15</span><span class="src">  }, []);</span></div>
+                <div class="code-ln"><span class="ln">16</span><span class="src">  <span class="cm">// ... render mount targets</span></span></div>
+                <div class="code-ln"><span class="ln">17</span><span class="src">}</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- widgets() -->
+          <h3 id="widgets-factory">instance.widgets()<a class="anchor-link" href="#widgets-factory" aria-label="직접 링크">#</a></h3>
+          <p>세션 상태와 이벤트 버스를 공유하는 4개 위젯 팩토리를 생성합니다. 동일한 체크아웃 페이지 내 위젯끼리 상태를 공유하려면 반드시 같은 <code>widgets</code> 인스턴스를 사용해야 합니다.</p>
+
+          <h4>파라미터</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="widgets() 파라미터">
+              <thead>
+                <tr><th>이름</th><th>타입</th><th>기본값</th><th>설명</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>customerKey</code><span class="req">*</span></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">고객 식별자. 비회원은 <code>"ANONYMOUS"</code>. 회원은 UUID 또는 <code>[A-Za-z0-9\-_=.@]</code> 2–50자, 특수문자(<code>-_=.@</code>) 최소 1개 포함 필수.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>locale</code></td>
+                  <td class="ptype">"ko" | "en" | "ja" | "zh-CN"</td>
+                  <td class="pdefault"><code>"en"</code></td>
+                  <td class="pdesc">위젯 UI 언어. 주소 폼 레이블, 배송 옵션 표시 등에 적용됩니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p><strong>반환</strong>: <code>CheckoutWidgets</code> (동기 반환)</p>
+
+          <!-- setAmount() -->
+          <h3 id="set-amount">setAmount()<a class="anchor-link" href="#set-amount" aria-label="직접 링크">#</a></h3>
+          <p><code>renderXxx()</code> 이전에 반드시 호출해야 합니다. 변경 시 마운트된 모든 위젯에 <code>amount:change</code> 이벤트가 자동 전파됩니다. PAN 스캐너(<code>assertPanFree</code>)를 통과해야 하며, 카드번호 형식의 숫자열이 포함된 값은 거부됩니다.</p>
+
+          <h4>파라미터 — Money</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="setAmount() 파라미터">
+              <thead>
+                <tr><th>이름</th><th>타입</th><th>설명</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>amount.value</code><span class="req">*</span></td>
+                  <td class="ptype">number</td>
+                  <td class="pdesc">0 이상의 유한 숫자. 음수 또는 <code>NaN</code>은 오류.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>amount.currency</code><span class="req">*</span></td>
+                  <td class="ptype">"KRW" | "USD" | "JPY"</td>
+                  <td class="pdesc">ISO 4217 통화 코드. 현재 3개 통화 지원.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- setOrder() -->
+          <h3 id="set-order">setOrder()<a class="anchor-link" href="#set-order" aria-label="직접 링크">#</a></h3>
+          <p>주문 정보를 세션에 설정합니다. <code>buyerCountry</code>를 지정하면 주소 위젯의 초기 국가가 해당 값으로 설정됩니다.</p>
+
+          <h4>파라미터 — OrderInfo</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="setOrder() 파라미터">
+              <thead>
+                <tr><th>이름</th><th>타입</th><th>기본값</th><th>설명</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>order.id</code><span class="req">*</span></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">비어있지 않은 주문 ID. <code>requestPayment</code> redirect URL에 포함됩니다.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>order.name</code><span class="req">*</span></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">상품명. 비어있지 않아야 합니다.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>order.buyerCountry</code></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">ISO-3166-1 alpha-2 국가 코드. 주소 위젯 초기 국가 및 결제 수단 필터링에 사용됩니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout warning">
+            <span class="callout-icon" aria-hidden="true">!</span>
+            <p><strong>호출 순서 강제</strong>: <code>renderAddress</code>, <code>renderShipping</code>, <code>renderPayment</code>, <code>renderAgreement</code>는 모두 <code>setAmount()</code>가 먼저 호출된 상태여야 합니다. 그렇지 않으면 <code>OpenCheckoutValidationError: setAmount must be called before renderXxx</code>가 throw됩니다.</p>
+          </div>
+        </section>
+
+        <!-- ===================== SECTION 4: renderAddress ===================== -->
+        <section class="doc-section" id="render-address" aria-labelledby="h-render-address">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>04 — Widget</span>
+          <h2 id="h-render-address">renderAddress()<a class="anchor-link" href="#render-address" aria-label="직접 링크">#</a></h2>
+          <p class="section-lead">국제 주소 입력 위젯을 마운트합니다. 16개국 내장 schema를 기반으로 국가별 필드 구성과 우편번호 유효성 검사가 자동 적용됩니다.</p>
+
+          <h4>파라미터</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="renderAddress 파라미터">
+              <thead><tr><th>이름</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>selector</code><span class="req">*</span></td>
+                  <td class="ptype">string | Element</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">CSS 선택자 또는 DOM 요소. 해당 요소 내에 <code>&lt;oc-address&gt;</code> Custom Element가 삽입됩니다.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>variantKey</code></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">A/B 테스트 식별자. 현재 렌더링 로직에는 영향 없음, 이벤트 페이로드에 포함될 예정.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p><strong>반환</strong>: <code>AddressWidget</code> — <code>on(event, cb)</code>, <code>destroy()</code> 메서드를 가집니다.</p>
+
+          <h4>이벤트</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="AddressWidget 이벤트">
+              <thead><tr><th>이벤트</th><th>페이로드 타입</th><th>설명</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>addressSelect</code></td>
+                  <td class="ptype">AddressSelection</td>
+                  <td class="pdesc">필드 변경 시마다 emit. 국가 변경 시 필드 초기화 후 재emit.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4>AddressSelection 페이로드 스키마</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="AddressSelection 필드">
+              <thead><tr><th>필드</th><th>타입</th><th>설명</th></tr></thead>
+              <tbody>
+                <tr><td class="pname"><code>country</code></td><td class="ptype">string</td><td class="pdesc">ISO-3166-1 alpha-2 국가 코드 (예: <code>"KR"</code>)</td></tr>
+                <tr><td class="pname"><code>line1</code></td><td class="ptype">string</td><td class="pdesc">주소 1줄 (도로명 또는 상세 주소)</td></tr>
+                <tr><td class="pname"><code>line2</code></td><td class="ptype">string?</td><td class="pdesc">주소 2줄 (동·호수 등)</td></tr>
+                <tr><td class="pname"><code>postal</code></td><td class="ptype">string</td><td class="pdesc">우편번호. 정규식 검증 적용.</td></tr>
+                <tr><td class="pname"><code>zip</code></td><td class="ptype">string</td><td class="pdesc"><code>postal</code>의 mirror alias. 하위 호환성 유지용. 신규 코드에서는 <code>postal</code> 사용 권장.</td></tr>
+                <tr><td class="pname"><code>admin1</code></td><td class="ptype">string?</td><td class="pdesc">시·도 또는 주 (예: 서울특별시, California)</td></tr>
+                <tr><td class="pname"><code>admin1Code</code></td><td class="ptype">string?</td><td class="pdesc">admin1 내부 코드 (예: <code>"KR-11"</code>)</td></tr>
+                <tr><td class="pname"><code>admin2</code></td><td class="ptype">string?</td><td class="pdesc">시·군·구 (예: 강남구)</td></tr>
+                <tr><td class="pname"><code>admin2Code</code></td><td class="ptype">string?</td><td class="pdesc">admin2 내부 코드</td></tr>
+                <tr><td class="pname"><code>city</code></td><td class="ptype">string?</td><td class="pdesc">도시명 (미국·일본 등)</td></tr>
+                <tr><td class="pname"><code>regionCode</code></td><td class="ptype">string?</td><td class="pdesc"><code>google.type.PostalAddress</code> 호환 alias. <code>country</code>와 동일값.</td></tr>
+                <tr><td class="pname"><code>languageCode</code></td><td class="ptype">string?</td><td class="pdesc">세션 locale 값.</td></tr>
+                <tr><td class="pname"><code>postalCode</code></td><td class="ptype">string?</td><td class="pdesc"><code>postal</code>의 PostalAddress alias.</td></tr>
+                <tr><td class="pname"><code>administrativeArea</code></td><td class="ptype">string?</td><td class="pdesc"><code>admin1</code>의 PostalAddress alias.</td></tr>
+                <tr><td class="pname"><code>locality</code></td><td class="ptype">string?</td><td class="pdesc"><code>city</code>의 PostalAddress alias.</td></tr>
+                <tr><td class="pname"><code>sublocality</code></td><td class="ptype">string?</td><td class="pdesc"><code>admin2</code>의 PostalAddress alias.</td></tr>
+                <tr><td class="pname"><code>addressLines</code></td><td class="ptype">string[]</td><td class="pdesc">line1 + line2 배열. Google Maps Platform 직접 주입용.</td></tr>
+                <tr><td class="pname"><code>recipients</code></td><td class="ptype">string[]</td><td class="pdesc">v1에서는 항상 빈 배열.</td></tr>
+                <tr><td class="pname"><code>sortingCode</code></td><td class="ptype">string?</td><td class="pdesc">국가별 정렬 코드 (일부 국가만 해당).</td></tr>
+                <tr><td class="pname"><code>organization</code></td><td class="ptype">string?</td><td class="pdesc">v1에서는 미사용. 향후 B2B 지원 예정.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-tabs">
+            <div class="code-tab-bar">
+              <button class="tab-btn" data-tab="active" data-tab-trigger data-target="addr-js">Vanilla JS</button>
+              <button class="tab-btn" data-tab-trigger data-target="addr-react">React</button>
+            </div>
+            <div class="tab-pane" id="addr-js" data-tab="active">
+              <div class="code-block" id="addr-js-code">
+                <button class="copy-btn" data-copy="addr-js-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="kw">const</span> addressWidget = widgets.<span class="fn">renderAddress</span>({ <span class="op">selector:</span> <span class="str">"#address"</span> });</span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src"></span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src"><span class="kw">const</span> unsub = addressWidget.<span class="fn">on</span>(<span class="str">"addressSelect"</span>, (sel) =&gt; {</span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src">  console.<span class="fn">log</span>(<span class="str">`국가: ${sel.country}, 우편번호: ${sel.postal}`</span>);</span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src">  <span class="cm">// google.type.PostalAddress 호환 alias 사용 예</span></span></div>
+                <div class="code-ln"><span class="ln">6</span><span class="src">  console.<span class="fn">log</span>(sel.addressLines); <span class="cm">// ["서울시 강남구 테헤란로 521", "20층"]</span></span></div>
+                <div class="code-ln"><span class="ln">7</span><span class="src">});</span></div>
+                <div class="code-ln"><span class="ln">8</span><span class="src"></span></div>
+                <div class="code-ln"><span class="ln">9</span><span class="src"><span class="cm">// 구독 해제</span></span></div>
+                <div class="code-ln"><span class="ln">10</span><span class="src"><span class="fn">unsub</span>();</span></div>
+              </div>
+            </div>
+            <div class="tab-pane" id="addr-react">
+              <div class="code-block" id="addr-react-code">
+                <button class="copy-btn" data-copy="addr-react-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="kw">const</span> ref = <span class="fn">useRef</span>(<span class="kw">null</span>);</span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src"><span class="fn">useEffect</span>(() =&gt; {</span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src">  <span class="kw">if</span> (!widgets || !ref.current) <span class="kw">return</span>;</span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src">  <span class="kw">const</span> w = widgets.<span class="fn">renderAddress</span>({ <span class="op">selector:</span> ref.current });</span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src">  <span class="kw">const</span> unsub = w.<span class="fn">on</span>(<span class="str">"addressSelect"</span>, (sel) =&gt; <span class="fn">setAddress</span>(sel));</span></div>
+                <div class="code-ln"><span class="ln">6</span><span class="src">  <span class="kw">return</span> () =&gt; { <span class="fn">unsub</span>(); w.<span class="fn">destroy</span>(); };</span></div>
+                <div class="code-ln"><span class="ln">7</span><span class="src">}, [widgets]);</span></div>
+                <div class="code-ln"><span class="ln">8</span><span class="src"><span class="kw">return</span> <span class="tg">&lt;div</span> <span class="op">ref=</span>{ref} <span class="tg">/&gt;</span>;</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== SECTION 5: renderShipping ===================== -->
+        <section class="doc-section" id="render-shipping" aria-labelledby="h-render-shipping">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>05 — Widget</span>
+          <h2 id="h-render-shipping">renderShipping()<a class="anchor-link" href="#render-shipping" aria-label="직접 링크">#</a></h2>
+          <p class="section-lead">배송 방법 선택 위젯을 마운트합니다. 주소 위젯에서 국가가 변경되면 국내/해외 옵션이 자동으로 전환됩니다.</p>
+
+          <h4>파라미터</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="renderShipping 파라미터">
+              <thead><tr><th>이름</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>selector</code><span class="req">*</span></td>
+                  <td class="ptype">string | Element</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">CSS 선택자 또는 DOM 요소.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p><strong>반환</strong>: <code>ShippingWidget</code></p>
+
+          <h4>이벤트</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="ShippingWidget 이벤트">
+              <thead><tr><th>이벤트</th><th>페이로드 타입</th><th>설명</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>methodSelect</code></td>
+                  <td class="ptype">ShippingSelection</td>
+                  <td class="pdesc">사용자가 배송 방법을 선택할 때 emit. 초기값은 스탠다드.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4>ShippingSelection 페이로드</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="ShippingSelection 필드">
+              <thead><tr><th>필드</th><th>타입</th><th>설명</th></tr></thead>
+              <tbody>
+                <tr><td class="pname"><code>carrier</code></td><td class="ptype">string</td><td class="pdesc"><code>"standard"</code> | <code>"express"</code> | <code>"ems"</code> (해외). v1 고정값.</td></tr>
+                <tr><td class="pname"><code>rate</code></td><td class="ptype">number</td><td class="pdesc">배송비. standard: 3500, express: 9000, ems: 18000.</td></tr>
+                <tr><td class="pname"><code>currency</code></td><td class="ptype">string</td><td class="pdesc">현재 항상 <code>"KRW"</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-tabs">
+            <div class="code-tab-bar">
+              <button class="tab-btn" data-tab="active" data-tab-trigger data-target="ship-js">Vanilla JS</button>
+              <button class="tab-btn" data-tab-trigger data-target="ship-react">React</button>
+            </div>
+            <div class="tab-pane" id="ship-js" data-tab="active">
+              <div class="code-block" id="ship-js-code">
+                <button class="copy-btn" data-copy="ship-js-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="kw">const</span> shippingWidget = widgets.<span class="fn">renderShipping</span>({ <span class="op">selector:</span> <span class="str">"#shipping"</span> });</span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src"></span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src">shippingWidget.<span class="fn">on</span>(<span class="str">"methodSelect"</span>, (sel) =&gt; {</span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src">  console.<span class="fn">log</span>(<span class="str">`${sel.carrier}: ₩${sel.rate}`</span>);</span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src">});</span></div>
+              </div>
+            </div>
+            <div class="tab-pane" id="ship-react">
+              <div class="code-block" id="ship-react-code">
+                <button class="copy-btn" data-copy="ship-react-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="kw">const</span> ref = <span class="fn">useRef</span>(<span class="kw">null</span>);</span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src"><span class="fn">useEffect</span>(() =&gt; {</span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src">  <span class="kw">if</span> (!widgets || !ref.current) <span class="kw">return</span>;</span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src">  <span class="kw">const</span> w = widgets.<span class="fn">renderShipping</span>({ <span class="op">selector:</span> ref.current });</span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src">  <span class="kw">const</span> unsub = w.<span class="fn">on</span>(<span class="str">"methodSelect"</span>, (sel) =&gt; <span class="fn">setShipping</span>(sel));</span></div>
+                <div class="code-ln"><span class="ln">6</span><span class="src">  <span class="kw">return</span> () =&gt; { <span class="fn">unsub</span>(); w.<span class="fn">destroy</span>(); };</span></div>
+                <div class="code-ln"><span class="ln">7</span><span class="src">}, [widgets]);</span></div>
+                <div class="code-ln"><span class="ln">8</span><span class="src"><span class="kw">return</span> <span class="tg">&lt;div</span> <span class="op">ref=</span>{ref} <span class="tg">/&gt;</span>;</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== SECTION 6: renderPayment ===================== -->
+        <section class="doc-section" id="render-payment" aria-labelledby="h-render-payment">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>06 — Widget</span>
+          <h2 id="h-render-payment">renderPayment()<a class="anchor-link" href="#render-payment" aria-label="직접 링크">#</a></h2>
+          <p class="section-lead">결제 수단 선택 위젯을 마운트합니다. 국가(KR vs. 해외)에 따라 표시 수단이 자동 전환됩니다. 카드 선택 시 KR은 할부, 해외는 발급 국가 표시.</p>
+
+          <h4>파라미터</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="renderPayment 파라미터">
+              <thead><tr><th>이름</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>selector</code><span class="req">*</span></td>
+                  <td class="ptype">string | Element</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">마운트 타깃.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>variantKey</code></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">A/B 테스트 식별자.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>methods</code></td>
+                  <td class="ptype">string[]</td>
+                  <td class="pdefault">국가별 자동</td>
+                  <td class="pdesc">노출할 결제 수단 코드 화이트리스트. KR 기본: <code>["card","transfer","virtual-account","easy-pay"]</code>. 해외 기본: <code>["card","foreign-card","easy-pay"]</code>.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>easyPayBrands</code></td>
+                  <td class="ptype">string[]</td>
+                  <td class="pdefault"><code>["paypal"]</code></td>
+                  <td class="pdesc">간편결제 브랜드 칩 목록. 현재 <code>"paypal"</code>, <code>"other"</code> 지원.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>installmentMaxMonths</code></td>
+                  <td class="ptype">number</td>
+                  <td class="pdefault"><code>12</code></td>
+                  <td class="pdesc">KR 카드 할부 최대 개월수. 2–24 사이로 clamp. 0 = 일시불만 표시.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p><strong>반환</strong>: <code>PaymentWidget</code></p>
+
+          <h4>이벤트 (4가지)</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="PaymentWidget 이벤트">
+              <thead><tr><th>이벤트</th><th>페이로드</th><th>발생 조건</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>paymentMethodSelect</code></td>
+                  <td class="ptype">string</td>
+                  <td class="pdesc">결제 수단 타일 클릭 시. 코드: <code>"card"</code> | <code>"transfer"</code> | <code>"virtual-account"</code> | <code>"foreign-card"</code> | <code>"easy-pay"</code></td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>installmentChange</code></td>
+                  <td class="ptype">number</td>
+                  <td class="pdesc">KR 카드 선택 후 할부 변경 시. 0 = 일시불.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>bankSelect</code></td>
+                  <td class="ptype">string</td>
+                  <td class="pdesc">가상계좌 은행 선택 시. 코드 예: <code>"kb"</code>, <code>"shinhan"</code>, <code>"kakao"</code></td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>easyPaySelect</code></td>
+                  <td class="ptype">string</td>
+                  <td class="pdesc">간편결제 브랜드 선택 시. 기본값: <code>"paypal"</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-tabs">
+            <div class="code-tab-bar">
+              <button class="tab-btn" data-tab="active" data-tab-trigger data-target="pay-basic">기본</button>
+              <button class="tab-btn" data-tab-trigger data-target="pay-custom">커스텀 옵션</button>
+              <button class="tab-btn" data-tab-trigger data-target="pay-events">이벤트 전부</button>
+            </div>
+            <div class="tab-pane" id="pay-basic" data-tab="active">
+              <div class="code-block" id="pay-basic-code">
+                <button class="copy-btn" data-copy="pay-basic-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="kw">const</span> payWidget = widgets.<span class="fn">renderPayment</span>({ <span class="op">selector:</span> <span class="str">"#payment"</span> });</span></div>
+              </div>
+            </div>
+            <div class="tab-pane" id="pay-custom">
+              <div class="code-block" id="pay-custom-code">
+                <button class="copy-btn" data-copy="pay-custom-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="kw">const</span> payWidget = widgets.<span class="fn">renderPayment</span>({</span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src">  <span class="op">selector:</span> <span class="str">"#payment"</span>,</span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src">  <span class="op">methods:</span> [<span class="str">"card"</span>, <span class="str">"easy-pay"</span>],     <span class="cm">// 카드+간편결제만</span></span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src">  <span class="op">easyPayBrands:</span> [<span class="str">"paypal"</span>, <span class="str">"other"</span>],</span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src">  <span class="op">installmentMaxMonths:</span> <span class="nm">6</span>,</span></div>
+                <div class="code-ln"><span class="ln">6</span><span class="src">});</span></div>
+              </div>
+            </div>
+            <div class="tab-pane" id="pay-events">
+              <div class="code-block" id="pay-events-code">
+                <button class="copy-btn" data-copy="pay-events-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="kw">const</span> pw = widgets.<span class="fn">renderPayment</span>({ <span class="op">selector:</span> <span class="str">"#payment"</span> });</span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src"></span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src">pw.<span class="fn">on</span>(<span class="str">"paymentMethodSelect"</span>, (code) =&gt; console.<span class="fn">log</span>(<span class="str">"method:"</span>, code));</span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src">pw.<span class="fn">on</span>(<span class="str">"installmentChange"</span>, (months) =&gt; console.<span class="fn">log</span>(<span class="str">"할부:"</span>, months));</span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src">pw.<span class="fn">on</span>(<span class="str">"bankSelect"</span>, (code) =&gt; console.<span class="fn">log</span>(<span class="str">"bank:"</span>, code));</span></div>
+                <div class="code-ln"><span class="ln">6</span><span class="src">pw.<span class="fn">on</span>(<span class="str">"easyPaySelect"</span>, (brand) =&gt; console.<span class="fn">log</span>(<span class="str">"easypay:"</span>, brand));</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== SECTION 7: renderAgreement ===================== -->
+        <section class="doc-section" id="render-agreement" aria-labelledby="h-render-agreement">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>07 — Widget</span>
+          <h2 id="h-render-agreement">renderAgreement()<a class="anchor-link" href="#render-agreement" aria-label="직접 링크">#</a></h2>
+          <p class="section-lead">결제 약관 동의 위젯을 마운트합니다. 사용자가 동의하지 않으면 <code>requestPayment()</code>가 오류를 throw합니다.</p>
+
+          <div class="callout info">
+            <span class="callout-icon" aria-hidden="true">i</span>
+            <p><strong>v1.1 예정</strong>: 현재 위젯은 단일 체크박스(결제 약관 동의)만 제공합니다. v1.1에서는 한국 D2C 컴플라이언스 감사 권고에 따라 다중 약관 항목(개인정보 수집·이용 동의, 제3자 제공 동의 등)으로 확장될 예정입니다.</p>
+          </div>
+
+          <h4>파라미터</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="renderAgreement 파라미터">
+              <thead><tr><th>이름</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>selector</code><span class="req">*</span></td>
+                  <td class="ptype">string | Element</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">마운트 타깃.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p><strong>반환</strong>: <code>AgreementWidget</code></p>
+
+          <h4>이벤트</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="AgreementWidget 이벤트">
+              <thead><tr><th>이벤트</th><th>페이로드</th><th>설명</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>agreementStatusChange</code></td>
+                  <td class="ptype">boolean</td>
+                  <td class="pdesc">체크박스 상태가 변경될 때 emit. <code>true</code> = 동의, <code>false</code> = 철회.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-tabs">
+            <div class="code-tab-bar">
+              <button class="tab-btn" data-tab="active" data-tab-trigger data-target="agr-js">Vanilla JS</button>
+            </div>
+            <div class="tab-pane" id="agr-js" data-tab="active">
+              <div class="code-block" id="agr-js-code">
+                <button class="copy-btn" data-copy="agr-js-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="kw">const</span> agrWidget = widgets.<span class="fn">renderAgreement</span>({ <span class="op">selector:</span> <span class="str">"#agreement"</span> });</span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src"></span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src">agrWidget.<span class="fn">on</span>(<span class="str">"agreementStatusChange"</span>, (accepted) =&gt; {</span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src">  payBtn.disabled = !accepted;</span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src">});</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== SECTION 8: requestPayment ===================== -->
+        <section class="doc-section" id="request-payment" aria-labelledby="h-request-payment">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>08 — Payment</span>
+          <h2 id="h-request-payment">requestPayment()<a class="anchor-link" href="#request-payment" aria-label="직접 링크">#</a></h2>
+          <p class="section-lead">사전 조건이 모두 충족되면 결제 요청을 초기화합니다. v1에서는 게이트웨이 API를 호출하지 않고 <code>successUrl</code>로 mock redirect를 수행합니다.</p>
+
+          <div class="callout warning">
+            <span class="callout-icon" aria-hidden="true">!</span>
+            <p><strong>v1 mock redirect</strong>: 현재 <code>requestPayment()</code>는 실제 PG 연동 없이 <code>successUrl?paymentKey=mock_&lt;orderId&gt;_&lt;timestamp&gt;&amp;orderId=&lt;id&gt;&amp;amount=&lt;value&gt;</code> 형식으로 브라우저를 redirect합니다. 실제 PG 연동(<code>window.location.assign</code> → 게이트웨이 API 호출)은 <strong>v1.0.1</strong>에서 제공될 예정입니다. 프로덕션 배포 전 <a href="https://github.com/today-zh-learned/opencheckout">릴리즈 노트</a>를 확인하세요.</p>
+          </div>
+
+          <h4>사전 조건 (순서대로 충족 필요)</h4>
+          <ol style="margin:0 0 24px; padding-left:20px; color:var(--muted); font-size:14px; line-height:2;">
+            <li><code>setAmount()</code> 완료</li>
+            <li><code>setOrder()</code> 완료</li>
+            <li><code>renderAgreement()</code>를 통해 마운트된 약관 위젯에서 사용자가 동의 체크 (<code>agreementChecked === true</code>)</li>
+            <li>브라우저 환경 (<code>typeof window !== "undefined"</code>)</li>
+          </ol>
+
+          <h4>파라미터</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="requestPayment 파라미터">
+              <thead><tr><th>이름</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>successUrl</code><span class="req">*</span></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">결제 성공 시 redirect할 URL. Query string이 자동으로 추가됩니다: <code>paymentKey</code>, <code>orderId</code>, <code>amount</code>.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>failUrl</code><span class="req">*</span></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">결제 실패 시 redirect할 URL. v1 mock에서는 사용되지 않지만 필수 파라미터입니다.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>customerEmail</code></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">고객 이메일. v1에서는 세션에 저장되지만 redirect URL에 포함되지 않습니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p><strong>반환</strong>: <code>Promise&lt;void&gt;</code>. 성공 시 <code>window.location.assign(successUrl + queryString)</code>을 호출하므로 페이지가 이동합니다. Promise resolve 이후 코드는 실행되지 않습니다.</p>
+
+          <h4>v1 mock redirect URL 구조</h4>
+          <div class="code-tabs">
+            <div class="code-tab-bar">
+              <button class="tab-btn" data-tab="active" data-tab-trigger data-target="rp-example">사용 예</button>
+              <button class="tab-btn" data-tab-trigger data-target="rp-success">success 핸들러</button>
+            </div>
+            <div class="tab-pane" id="rp-example" data-tab="active">
+              <div class="code-block" id="rp-example-code">
+                <button class="copy-btn" data-copy="rp-example-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="cm">// 버튼 클릭 → requestPayment</span></span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src">document.<span class="fn">querySelector</span>(<span class="str">"#pay"</span>).<span class="fn">addEventListener</span>(<span class="str">"click"</span>, <span class="kw">async</span> () =&gt; {</span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src">  <span class="kw">try</span> {</span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src">    <span class="kw">await</span> widgets.<span class="fn">requestPayment</span>({</span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src">      <span class="op">successUrl:</span> <span class="str">`${location.origin}/checkout/success`</span>,</span></div>
+                <div class="code-ln"><span class="ln">6</span><span class="src">      <span class="op">failUrl:</span> <span class="str">`${location.origin}/checkout/fail`</span>,</span></div>
+                <div class="code-ln"><span class="ln">7</span><span class="src">      <span class="op">customerEmail:</span> <span class="str">"buyer@example.com"</span>,</span></div>
+                <div class="code-ln"><span class="ln">8</span><span class="src">    });</span></div>
+                <div class="code-ln"><span class="ln">9</span><span class="src">  } <span class="kw">catch</span> (err) {</span></div>
+                <div class="code-ln"><span class="ln">10</span><span class="src">    <span class="cm">// OpenCheckoutValidationError: 약관 미동의 or setAmount/setOrder 누락</span></span></div>
+                <div class="code-ln"><span class="ln">11</span><span class="src">    console.<span class="fn">error</span>(err.message);</span></div>
+                <div class="code-ln"><span class="ln">12</span><span class="src">  }</span></div>
+                <div class="code-ln"><span class="ln">13</span><span class="src">});</span></div>
+              </div>
+            </div>
+            <div class="tab-pane" id="rp-success">
+              <div class="code-block" id="rp-success-code">
+                <button class="copy-btn" data-copy="rp-success-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="cm">// /checkout/success 페이지에서 query string 파싱</span></span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src"><span class="kw">const</span> params = <span class="kw">new</span> <span class="fn">URLSearchParams</span>(location.search);</span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src"><span class="kw">const</span> paymentKey = params.<span class="fn">get</span>(<span class="str">"paymentKey"</span>); <span class="cm">// "mock_order_abc_1714000000000"</span></span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src"><span class="kw">const</span> orderId = params.<span class="fn">get</span>(<span class="str">"orderId"</span>);       <span class="cm">// "order_abc"</span></span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src"><span class="kw">const</span> amount = params.<span class="fn">get</span>(<span class="str">"amount"</span>);         <span class="cm">// "49900"</span></span></div>
+                <div class="code-ln"><span class="ln">6</span><span class="src"></span></div>
+                <div class="code-ln"><span class="ln">7</span><span class="src"><span class="cm">// v1.0.1부터: 백엔드에서 paymentKey로 PG 서버 확인 필요</span></span></div>
+                <div class="code-ln"><span class="ln">8</span><span class="src"><span class="cm">// await fetch("/api/confirm", { method:"POST", body:JSON.stringify({paymentKey,orderId,amount}) });</span></span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== SECTION 9: EVENTS REFERENCE ===================== -->
+        <section class="doc-section" id="events-reference" aria-labelledby="h-events-reference">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>09 — Reference</span>
+          <h2 id="h-events-reference">이벤트 전체 표<a class="anchor-link" href="#events-reference" aria-label="직접 링크">#</a></h2>
+          <p class="section-lead">각 위젯이 발행하는 모든 이벤트를 한 곳에서 확인합니다. 모든 이벤트는 <code>widget.on(eventName, callback)</code>으로 구독하며, 반환된 함수를 호출하면 구독이 해제됩니다.</p>
+
+          <div class="table-wrap">
+            <table class="data-table" aria-label="전체 이벤트 참조표">
+              <thead>
+                <tr>
+                  <th>위젯</th>
+                  <th>이벤트 이름</th>
+                  <th>페이로드 타입</th>
+                  <th>설명</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge addr">Address</span></td>
+                  <td class="mono">addressSelect</td>
+                  <td class="mono">AddressSelection</td>
+                  <td class="dim">필드 변경 시마다 emit. 국가 변경 시 초기화 후 재emit.</td>
+                </tr>
+                <tr>
+                  <td><span class="badge ship">Shipping</span></td>
+                  <td class="mono">methodSelect</td>
+                  <td class="mono">ShippingSelection</td>
+                  <td class="dim">배송 옵션 선택 시. <code>{ carrier, rate, currency }</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge pay">Payment</span></td>
+                  <td class="mono">paymentMethodSelect</td>
+                  <td class="mono">string</td>
+                  <td class="dim">결제 수단 타일 클릭 시. <code>"card" | "transfer" | "virtual-account" | "foreign-card" | "easy-pay"</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge pay">Payment</span></td>
+                  <td class="mono">installmentChange</td>
+                  <td class="mono">number</td>
+                  <td class="dim">KR 카드 선택 후 할부 개월 변경 시. 0 = 일시불.</td>
+                </tr>
+                <tr>
+                  <td><span class="badge pay">Payment</span></td>
+                  <td class="mono">bankSelect</td>
+                  <td class="mono">string</td>
+                  <td class="dim">가상계좌 은행 선택 시. <code>"kb" | "shinhan" | "woori" | "hana" | "ibk" | "nh" | "sc" | "kakao"</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge pay">Payment</span></td>
+                  <td class="mono">easyPaySelect</td>
+                  <td class="mono">string</td>
+                  <td class="dim">간편결제 브랜드 선택 시. 기본 <code>"paypal"</code>.</td>
+                </tr>
+                <tr>
+                  <td><span class="badge agr">Agreement</span></td>
+                  <td class="mono">agreementStatusChange</td>
+                  <td class="mono">boolean</td>
+                  <td class="dim">약관 동의 체크박스 상태 변경 시. <code>true</code> = 동의.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4>내부 버스 이벤트 (고급)</h4>
+          <p>위젯 간 상태 공유는 <code>EventBus&lt;WidgetBusMap&gt;</code>를 통해 이루어집니다. 이 버스는 SDK 내부 전용이며, 머천트 코드에서 직접 구독할 수 없습니다.</p>
+          <div class="table-wrap">
+            <table class="data-table" aria-label="내부 버스 이벤트">
+              <thead>
+                <tr><th>버스 이벤트</th><th>페이로드</th><th>발생 조건</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="mono">amount:change</td><td class="mono">Money</td><td class="dim"><code>setAmount()</code> 호출 시. 모든 마운트된 위젯에 전파.</td></tr>
+                <tr><td class="mono">order:change</td><td class="mono">OrderInfo</td><td class="dim"><code>setOrder()</code> 호출 시. 주소 위젯 국가 초기화에 사용.</td></tr>
+                <tr><td class="mono">address:change</td><td class="mono">AddressSelection</td><td class="dim">주소 위젯 내부 필드 변경 시. 결제 위젯 국가 필터링에 연동.</td></tr>
+                <tr><td class="mono">shipping:change</td><td class="mono">ShippingSelection</td><td class="dim">배송 방법 선택 시.</td></tr>
+                <tr><td class="mono">payment:change</td><td class="mono">string</td><td class="dim">결제 수단 선택 시.</td></tr>
+                <tr><td class="mono">payment:installment</td><td class="mono">number</td><td class="dim">할부 개월 변경 시.</td></tr>
+                <tr><td class="mono">payment:bank</td><td class="mono">string</td><td class="dim">가상계좌 은행 선택 시.</td></tr>
+                <tr><td class="mono">payment:easyPay</td><td class="mono">string</td><td class="dim">간편결제 브랜드 선택 시.</td></tr>
+                <tr><td class="mono">agreement:change</td><td class="mono">boolean</td><td class="dim">약관 동의 상태 변경 시.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===================== SECTION 10: ERRORS ===================== -->
+        <section class="doc-section" id="errors" aria-labelledby="h-errors">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>10 — Reference</span>
+          <h2 id="h-errors">에러<a class="anchor-link" href="#errors" aria-label="직접 링크">#</a></h2>
+          <p class="section-lead">OpenCheckout SDK는 두 가지 에러 클래스를 사용합니다. 모두 <code>Error</code>를 extends하며 <code>try/catch</code>로 처리합니다.</p>
+
+          <h3 id="h-validation-error">OpenCheckoutValidationError<a class="anchor-link" href="#h-validation-error" aria-label="직접 링크">#</a></h3>
+          <p>필수 파라미터 누락, 잘못된 형식, 호출 순서 위반, 범위 초과 값 등 입력 유효성 문제 시 throw됩니다.</p>
+
+          <div class="table-wrap">
+            <table class="data-table" aria-label="OpenCheckoutValidationError 메시지 목록">
+              <thead>
+                <tr><th>메시지 패턴</th><th>발생 위치</th><th>해결 방법</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="mono">publishableKey is required</td>
+                  <td class="dim"><code>load()</code></td>
+                  <td class="dim"><code>publishableKey</code> 파라미터를 전달하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">publishableKey must match pk_(test|live)_...</td>
+                  <td class="dim"><code>load()</code></td>
+                  <td class="dim">키 형식을 확인하세요. 테스트: <code>pk_test_&lt;shard&gt;_&lt;random&gt;</code>.</td>
+                </tr>
+                <tr>
+                  <td class="mono">customerKey must be a string</td>
+                  <td class="dim"><code>widgets()</code></td>
+                  <td class="dim">비회원은 <code>"ANONYMOUS"</code>를 사용하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">customerKey must be 2-50 characters</td>
+                  <td class="dim"><code>widgets()</code></td>
+                  <td class="dim">2자 이상 50자 이하로 설정하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">customerKey must contain at least one of -_=.@</td>
+                  <td class="dim"><code>widgets()</code></td>
+                  <td class="dim">특수문자(<code>-_=.@</code>) 최소 1개 포함 필수. <code>"ANONYMOUS"</code>는 예외.</td>
+                </tr>
+                <tr>
+                  <td class="mono">locale must be one of ko, en, ja, zh-CN</td>
+                  <td class="dim"><code>widgets()</code></td>
+                  <td class="dim">지원 locale 중 하나를 사용하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">amount must be { value, currency }</td>
+                  <td class="dim"><code>setAmount()</code></td>
+                  <td class="dim">객체 형식으로 전달하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">amount.value must be a non-negative finite number</td>
+                  <td class="dim"><code>setAmount()</code></td>
+                  <td class="dim">0 이상의 유한 숫자를 사용하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">amount.currency must be one of KRW, USD, JPY</td>
+                  <td class="dim"><code>setAmount()</code></td>
+                  <td class="dim">지원 통화 3가지 중 하나를 사용하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">order.id must be a non-empty string</td>
+                  <td class="dim"><code>setOrder()</code></td>
+                  <td class="dim">비어있지 않은 주문 ID를 전달하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">order.name must be a non-empty string</td>
+                  <td class="dim"><code>setOrder()</code></td>
+                  <td class="dim">비어있지 않은 상품명을 전달하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">setAmount must be called before renderXxx</td>
+                  <td class="dim"><code>renderAddress/Shipping/Payment/Agreement()</code></td>
+                  <td class="dim"><code>setAmount()</code>를 먼저 호출하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">setOrder must be called before requestPayment</td>
+                  <td class="dim"><code>requestPayment()</code></td>
+                  <td class="dim"><code>setOrder()</code>를 먼저 호출하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">agreement not accepted</td>
+                  <td class="dim"><code>requestPayment()</code></td>
+                  <td class="dim">약관 위젯에서 사용자가 동의 체크를 해야 합니다.</td>
+                </tr>
+                <tr>
+                  <td class="mono">successUrl is required</td>
+                  <td class="dim"><code>requestPayment()</code></td>
+                  <td class="dim">비어있지 않은 <code>successUrl</code>을 전달하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">failUrl is required</td>
+                  <td class="dim"><code>requestPayment()</code></td>
+                  <td class="dim">비어있지 않은 <code>failUrl</code>을 전달하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">requestPayment requires a window</td>
+                  <td class="dim"><code>requestPayment()</code></td>
+                  <td class="dim">SSR 환경에서는 <code>typeof window !== "undefined"</code> 가드 후 호출하세요.</td>
+                </tr>
+                <tr>
+                  <td class="mono">gatewayUrl is not a valid URL</td>
+                  <td class="dim"><code>load()</code></td>
+                  <td class="dim">유효한 http/https URL을 사용하세요.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 id="h-security-error">OpenCheckoutSecurityError<a class="anchor-link" href="#h-security-error" aria-label="직접 링크">#</a></h3>
+          <p>PAN(카드번호)이 위젯 경계를 넘어가려고 할 때 throw됩니다. 이 에러는 SDK 내부 보안 계층(<code>assertPanFree</code>)에서 자동으로 감지합니다.</p>
+
+          <div class="table-wrap">
+            <table class="data-table" aria-label="OpenCheckoutSecurityError">
+              <thead>
+                <tr><th>메시지</th><th>발생 조건</th><th>해결 방법</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="mono">PAN-like card data cannot cross widget boundaries</td>
+                  <td class="dim"><code>setAmount()</code>, <code>setOrder()</code>, <code>renderXxx()</code>, <code>requestPayment()</code> 파라미터에 Luhn 검사를 통과하는 13–19자리 숫자열이 포함될 때</td>
+                  <td class="dim">카드번호는 절대 SDK 파라미터로 전달하지 마세요. 카드 입력은 게이트웨이가 제공하는 Shadow DOM 내부에서만 처리됩니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout danger">
+            <span class="callout-icon" aria-hidden="true">!</span>
+            <p><strong>OpenCheckoutSecurityError가 예기치 않게 발생하면</strong>: 주문 ID, 상품명, 주소 필드 등에 카드번호와 유사한 숫자열(13–19자리, 구분자 포함)이 포함되어 있지 않은지 확인하세요. Luhn 알고리즘을 통과하는 숫자열은 모두 차단됩니다.</p>
+          </div>
+        </section>
+
+        <!-- ===================== SECTION 11: PAN BOUNDARY ===================== -->
+        <section class="doc-section" id="pan-boundary" aria-labelledby="h-pan-boundary">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>11 — Security</span>
+          <h2 id="h-pan-boundary">PAN 경계<a class="anchor-link" href="#pan-boundary" aria-label="직접 링크">#</a></h2>
+          <p class="section-lead">OpenCheckout은 카드번호(PAN)가 위젯 경계 밖으로 절대 이동할 수 없도록 설계되었습니다. 이 원칙은 ADR-003에 공식화되어 있습니다.</p>
+
+          <div class="callout info">
+            <span class="callout-icon" aria-hidden="true">i</span>
+            <p><strong>ADR-003 — PAN 경계</strong>: 카드 데이터 입력은 게이트웨이가 제공하는 별도 origin의 iframe(Shadow DOM) 내에서만 이루어집니다. SDK 파라미터, 이벤트 페이로드, 세션 상태 어디에도 카드번호가 존재할 수 없습니다. 전체 설계는 <a href="https://github.com/today-zh-learned/opencheckout/blob/main/docs/adr/ADR-003-pan-boundary.md">ADR-003</a>을 참고하세요.</p>
+          </div>
+
+          <h3 id="h-pan-what-sdk-does">SDK가 하는 일<a class="anchor-link" href="#h-pan-what-sdk-does" aria-label="직접 링크">#</a></h3>
+          <p>모든 공개 API 진입점(<code>setAmount</code>, <code>setOrder</code>, <code>renderXxx</code>, <code>requestPayment</code>)은 파라미터를 <code>assertPanFree()</code>로 검사합니다. 이 함수는 다음 로직으로 동작합니다:</p>
+          <ol style="margin:0 0 20px; padding-left:20px; color:var(--muted); font-size:14px; line-height:2.2;">
+            <li>값을 재귀적으로 순회합니다 (객체, 배열, 숫자, 문자열).</li>
+            <li>13–19자리 숫자열(구분자 <code>-</code> · <code>space</code> 포함 패턴)을 추출합니다.</li>
+            <li>각 후보에 대해 반복 자릿수 필터 + Luhn 검사를 실행합니다.</li>
+            <li>검사를 통과하는 숫자열이 하나라도 있으면 <code>OpenCheckoutSecurityError</code>를 throw합니다.</li>
+          </ol>
+
+          <h3 id="h-pan-what-not">머천트가 하면 안 되는 것<a class="anchor-link" href="#h-pan-what-not" aria-label="직접 링크">#</a></h3>
+          <div class="callout danger">
+            <span class="callout-icon" aria-hidden="true">!</span>
+            <p>다음 행동은 <strong>절대 금지</strong>입니다. SDK 자체도 이를 차단하지만, 보안 감사에서 지적될 수 있습니다:</p>
+          </div>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="PAN 경계 금지 사항">
+              <thead><tr><th>금지 행동</th><th>이유</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="pdesc">카드번호를 <code>order.id</code>, <code>order.name</code>, URL, 이메일 등 SDK 파라미터에 포함</td>
+                  <td class="pdesc"><code>OpenCheckoutSecurityError</code>가 throw되어 결제 흐름이 중단됩니다.</td>
+                </tr>
+                <tr>
+                  <td class="pdesc">위젯 Shadow DOM 내부 DOM을 직접 쿼리하여 입력 값 추출</td>
+                  <td class="pdesc">Shadow DOM 격리로 인해 기술적으로 불가능하지만, 시도 자체가 보안 정책 위반입니다.</td>
+                </tr>
+                <tr>
+                  <td class="pdesc">카드번호를 <code>localStorage</code>, <code>sessionStorage</code>, 쿠키에 저장</td>
+                  <td class="pdesc">PCI DSS 위반. SDK는 이를 방지할 수 없으므로 머천트 책임입니다.</td>
+                </tr>
+                <tr>
+                  <td class="pdesc">카드번호를 머천트 서버로 직접 전송</td>
+                  <td class="pdesc">PCI DSS 위반. 결제 확인은 <code>paymentKey</code>를 통해 게이트웨이 서버에서 수행하세요.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===================== SECTION 12: BACKEND PREVIEW ===================== -->
+        <section class="doc-section" id="backend-preview" aria-labelledby="h-backend-preview">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>12 — Preview</span>
+          <h2 id="h-backend-preview">백엔드 연동 <em>(preview)</em><a class="anchor-link" href="#backend-preview" aria-label="직접 링크">#</a></h2>
+          <p class="section-lead">v1.0.1부터 제공될 서버 측 결제 확인 흐름을 미리 확인합니다. 현재 v1에서는 mock redirect만 제공되므로, 아래 코드는 참고용입니다.</p>
+
+          <div class="callout warning">
+            <span class="callout-icon" aria-hidden="true">!</span>
+            <p><strong>Preview — v1.0.1 예정</strong>: 아래 백엔드 API는 아직 구현되지 않았습니다. <code>successUrl</code>에서 수신한 <code>paymentKey</code>로 게이트웨이 서버에 확인 요청을 보내는 흐름은 v1.0.1에서 정식 제공됩니다.</p>
+          </div>
+
+          <h3 id="h-backend-flow">서버 확인 흐름<a class="anchor-link" href="#h-backend-flow" aria-label="직접 링크">#</a></h3>
+          <p>브라우저가 <code>successUrl</code>로 redirect되면, <strong>반드시 백엔드에서 <code>paymentKey</code>를 검증</strong>해야 합니다. 클라이언트만으로 결제 완료를 처리하면 금액 조작 공격에 취약합니다.</p>
+
+          <div class="code-tabs">
+            <div class="code-tab-bar">
+              <button class="tab-btn" data-tab="active" data-tab-trigger data-target="be-curl">curl</button>
+              <button class="tab-btn" data-tab-trigger data-target="be-node">Node.js</button>
+              <button class="tab-btn" data-tab-trigger data-target="be-python">Python</button>
+            </div>
+            <div class="tab-pane" id="be-curl" data-tab="active">
+              <div class="code-block" id="be-curl-code">
+                <button class="copy-btn" data-copy="be-curl-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="cm"># v1.0.1 예정 — 현재 엔드포인트 미구현</span></span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src">curl -X POST https://cloud.opencheckout.dev/v1/payments/confirm \</span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src">  -H <span class="str">"Authorization: Bearer sk_live_..."</span> \</span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src">  -H <span class="str">"Content-Type: application/json"</span> \</span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src">  -d <span class="str">'{"paymentKey":"&lt;key&gt;","orderId":"order_abc","amount":49900}'</span></span></div>
+              </div>
+            </div>
+            <div class="tab-pane" id="be-node">
+              <div class="code-block" id="be-node-code">
+                <button class="copy-btn" data-copy="be-node-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="cm">// v1.0.1 예정 — 현재 엔드포인트 미구현</span></span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src"><span class="cm">// Express.js 예시</span></span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src">app.<span class="fn">post</span>(<span class="str">"/api/confirm"</span>, <span class="kw">async</span> (req, res) =&gt; {</span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src">  <span class="kw">const</span> { paymentKey, orderId, amount } = req.body;</span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src">  <span class="kw">const</span> resp = <span class="kw">await</span> <span class="fn">fetch</span>(</span></div>
+                <div class="code-ln"><span class="ln">6</span><span class="src">    <span class="str">"https://cloud.opencheckout.dev/v1/payments/confirm"</span>,</span></div>
+                <div class="code-ln"><span class="ln">7</span><span class="src">    {</span></div>
+                <div class="code-ln"><span class="ln">8</span><span class="src">      <span class="op">method:</span> <span class="str">"POST"</span>,</span></div>
+                <div class="code-ln"><span class="ln">9</span><span class="src">      <span class="op">headers:</span> {</span></div>
+                <div class="code-ln"><span class="ln">10</span><span class="src">        <span class="str">"Authorization"</span>: <span class="str">`Bearer ${process.env.OC_SECRET_KEY}`</span>,</span></div>
+                <div class="code-ln"><span class="ln">11</span><span class="src">        <span class="str">"Content-Type"</span>: <span class="str">"application/json"</span>,</span></div>
+                <div class="code-ln"><span class="ln">12</span><span class="src">      },</span></div>
+                <div class="code-ln"><span class="ln">13</span><span class="src">      <span class="op">body:</span> <span class="fn">JSON.stringify</span>({ paymentKey, orderId, amount }),</span></div>
+                <div class="code-ln"><span class="ln">14</span><span class="src">    }</span></div>
+                <div class="code-ln"><span class="ln">15</span><span class="src">  );</span></div>
+                <div class="code-ln"><span class="ln">16</span><span class="src">  <span class="kw">const</span> payment = <span class="kw">await</span> resp.<span class="fn">json</span>();</span></div>
+                <div class="code-ln"><span class="ln">17</span><span class="src">  <span class="kw">if</span> (payment.status === <span class="str">"DONE"</span>) {</span></div>
+                <div class="code-ln"><span class="ln">18</span><span class="src">    <span class="cm">// 주문 DB 업데이트</span></span></div>
+                <div class="code-ln"><span class="ln">19</span><span class="src">    res.<span class="fn">json</span>({ ok: <span class="kw">true</span> });</span></div>
+                <div class="code-ln"><span class="ln">20</span><span class="src">  } <span class="kw">else</span> {</span></div>
+                <div class="code-ln"><span class="ln">21</span><span class="src">    res.<span class="fn">status</span>(<span class="nm">400</span>).<span class="fn">json</span>({ ok: <span class="kw">false</span> });</span></div>
+                <div class="code-ln"><span class="ln">22</span><span class="src">  }</span></div>
+                <div class="code-ln"><span class="ln">23</span><span class="src">});</span></div>
+              </div>
+            </div>
+            <div class="tab-pane" id="be-python">
+              <div class="code-block" id="be-python-code">
+                <button class="copy-btn" data-copy="be-python-code">Copy</button>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="cm"># v1.0.1 예정 — 현재 엔드포인트 미구현</span></span></div>
+                <div class="code-ln"><span class="ln">2</span><span class="src"><span class="cm"># FastAPI 예시</span></span></div>
+                <div class="code-ln"><span class="ln">3</span><span class="src"><span class="kw">import</span> httpx</span></div>
+                <div class="code-ln"><span class="ln">4</span><span class="src"></span></div>
+                <div class="code-ln"><span class="ln">5</span><span class="src"><span class="kw">async def</span> <span class="fn">confirm_payment</span>(payment_key: str, order_id: str, amount: int):</span></div>
+                <div class="code-ln"><span class="ln">6</span><span class="src">    <span class="kw">async with</span> httpx.<span class="fn">AsyncClient</span>() <span class="kw">as</span> client:</span></div>
+                <div class="code-ln"><span class="ln">7</span><span class="src">        resp = <span class="kw">await</span> client.<span class="fn">post</span>(</span></div>
+                <div class="code-ln"><span class="ln">8</span><span class="src">            <span class="str">"https://cloud.opencheckout.dev/v1/payments/confirm"</span>,</span></div>
+                <div class="code-ln"><span class="ln">9</span><span class="src">            <span class="op">headers=</span>{<span class="str">"Authorization"</span>: <span class="str">f"Bearer {OC_SECRET_KEY}"</span>},</span></div>
+                <div class="code-ln"><span class="ln">10</span><span class="src">            <span class="op">json=</span>{<span class="str">"paymentKey"</span>: payment_key, <span class="str">"orderId"</span>: order_id, <span class="str">"amount"</span>: amount},</span></div>
+                <div class="code-ln"><span class="ln">11</span><span class="src">        )</span></div>
+                <div class="code-ln"><span class="ln">12</span><span class="src">        <span class="kw">return</span> resp.<span class="fn">json</span>()</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== SECTION 13: FAQ ===================== -->
+        <section class="doc-section" id="faq" aria-labelledby="h-faq">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>13 — Appendix</span>
+          <h2 id="h-faq">FAQ · Migration · 브라우저 지원 · 번들 크기<a class="anchor-link" href="#faq" aria-label="직접 링크">#</a></h2>
+
+          <h3 id="h-faq-questions">자주 묻는 질문<a class="anchor-link" href="#h-faq-questions" aria-label="직접 링크">#</a></h3>
+
+          <h4>React/Vue/Svelte에서 사용하려면?</h4>
+          <p>동일한 Vanilla JS API를 그대로 사용합니다. React의 경우 <code>useEffect</code>에서 <code>load()</code>를 호출하고, cleanup 함수에서 <code>widgets.destroy()</code>를 호출하세요. <code>StrictMode</code>에서는 effect가 두 번 실행되므로 <code>destroyed</code> 플래그로 guard해야 합니다 (Quick start React 탭 참고).</p>
+
+          <h4>Next.js App Router / SSR에서 사용하려면?</h4>
+          <p>SDK는 <code>window</code>를 필요로 하므로 SSR 단계에서는 호출하면 안 됩니다. <code>"use client"</code> 컴포넌트 내 <code>useEffect</code>에서 호출하거나, <code>dynamic(() =&gt; import('./CheckoutWidget'), { ssr: false })</code>로 지연 import하세요.</p>
+
+          <h4>동일 페이지에서 복수 위젯 인스턴스를 만들 수 있나요?</h4>
+          <p>네. 별도 세션이 필요한 경우 <code>oc.widgets()</code>를 여러 번 호출하면 됩니다. 단, 같은 체크아웃 흐름의 위젯끼리는 반드시 같은 <code>widgets</code> 인스턴스를 공유해야 이벤트 버스가 연결됩니다.</p>
+
+          <h4>주소 위젯 없이 결제만 사용할 수 있나요?</h4>
+          <p>네. <code>renderPayment()</code>와 <code>renderAgreement()</code>만 호출해도 됩니다. 단, <code>renderPayment</code> 옵션에 <code>methods: ["card"]</code>를 명시하지 않으면 주소 위젯에서 국가가 설정되기 전까지는 기본 KR 수단 세트가 표시됩니다.</p>
+
+          <h4>16개국 외 국가(예: 브라질, 멕시코)는 지원하나요?</h4>
+          <p>SDK에 내장된 schema는 16개국입니다. 그 외 국가는 <code>loadCountrySchema(code)</code>로 런타임 lazy fetch가 가능합니다. 네트워크 실패 시 <code>FALLBACK_COUNTRY</code> schema로 폴백됩니다.</p>
+
+          <h4>TypeScript 타입 정의는 어디서 확인하나요?</h4>
+          <p>패키지에 <code>.d.ts</code>가 포함되어 있습니다. 주요 타입: <code>LoadOptions</code>, <code>WidgetsOptions</code>, <code>CheckoutWidgets</code>, <code>AddressSelection</code>, <code>ShippingSelection</code>, <code>Money</code>, <code>OrderInfo</code>, <code>OpenCheckoutValidationError</code>, <code>OpenCheckoutSecurityError</code>.</p>
+
+          <h3 id="h-migration">Migration 노트<a class="anchor-link" href="#h-migration" aria-label="직접 링크">#</a></h3>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="Migration 노트">
+              <thead><tr><th>버전</th><th>변경 사항</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="pname">v1.0 (현재)</td>
+                  <td class="pdesc">초기 릴리즈. <code>requestPayment</code>는 mock redirect. <code>renderAgreement</code>는 단일 체크박스.</td>
+                </tr>
+                <tr>
+                  <td class="pname">v1.0.1 (예정)</td>
+                  <td class="pdesc">실제 PG 게이트웨이 연동. <code>requestPayment</code>가 게이트웨이 API를 호출. 백엔드 서버 확인 엔드포인트 활성화.</td>
+                </tr>
+                <tr>
+                  <td class="pname">v1.1 (예정)</td>
+                  <td class="pdesc"><code>renderAgreement</code> 다중 약관 항목 지원. 한국 D2C 컴플라이언스(개인정보 수집·이용, 제3자 제공 동의 등). <code>zip</code> 필드 deprecation 완료.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 id="h-browser-support">브라우저 지원<a class="anchor-link" href="#h-browser-support" aria-label="직접 링크">#</a></h3>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="브라우저 지원">
+              <thead><tr><th>브라우저</th><th>최소 버전</th><th>비고</th></tr></thead>
+              <tbody>
+                <tr><td class="pname">Chrome</td><td class="ptype">90+</td><td class="pdesc">Custom Elements v1 + Shadow DOM v1 필요.</td></tr>
+                <tr><td class="pname">Firefox</td><td class="ptype">88+</td><td class="pdesc"></td></tr>
+                <tr><td class="pname">Safari</td><td class="ptype">14+</td><td class="pdesc">iOS 15+ 포함.</td></tr>
+                <tr><td class="pname">Edge</td><td class="ptype">90+</td><td class="pdesc">Chromium 기반.</td></tr>
+                <tr><td class="pname">Android Chrome</td><td class="ptype">90+</td><td class="pdesc"></td></tr>
+                <tr><td class="pname">IE 11</td><td class="ptype">미지원</td><td class="pdesc">Polyfill 계획 없음.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 id="h-bundle-size">번들 크기<a class="anchor-link" href="#h-bundle-size" aria-label="직접 링크">#</a></h3>
+          <p>ESM 빌드 기준: <strong>100.3 KB</strong> (raw) / <strong>23.1 KB</strong> (gzipped). 25 KB gzipped 예산 내 유지.</p>
+          <p>포함 항목: 16개국 주소 schema (KR/JP/CN/TW/HK/SG/US/CA/GB/AU/NZ/DE/FR/IT/ES/BR), <code>formatAddress</code> printable 라벨, lazy <code>loadCountrySchema()</code> fetch, KR 시·도→시·군·구 cascading dropdown, 한글 초성 검색, libaddressinput 기반 우편번호 정규식, Preact 런타임.</p>
+          <p>트리쉐이킹: <code>formatAddress</code>와 <code>loadCountrySchema</code>는 사용하지 않으면 번들에서 제거됩니다.</p>
+        </section>
+
+        <!-- ===================== FOOTER ===================== -->
+        <footer class="site" role="contentinfo">
+          <div class="footer-grid">
+            <div class="footer-meta">
+              <div class="row">
+                <span><span class="k">version</span> v1.0</span>
+                <span><span class="k">license</span> Apache-2.0</span>
+                <span><span class="k">repo</span> <a href="https://github.com/today-zh-learned/opencheckout">today-zh-learned/opencheckout</a></span>
+                <span><span class="k">spec</span> <a href="https://github.com/today-zh-learned/opencheckout/blob/main/spec/openapi.yaml">openapi.yaml</a></span>
+                <span><span class="k">adr</span> <a href="https://github.com/today-zh-learned/opencheckout/blob/main/docs/adr/ADR-003-pan-boundary.md">ADR-003</a></span>
+                <span><span class="k">built</span> <span id="ft-built">—</span></span>
+              </div>
+            </div>
+            <div class="footer-mark">— made with restraint.</div>
+          </div>
+        </footer>
+
+      </main>
+    </div>
+
+      </main>
+    </div>
+
+    <script>
+      // ---- Sidebar mobile toggle ----
+      const sidebar = document.getElementById("sidebar");
+      const navToggle = document.getElementById("nav-toggle");
+      const scrim = document.getElementById("scrim");
+      navToggle.addEventListener("click", () => {
+        const open = sidebar.classList.toggle("open");
+        navToggle.setAttribute("aria-expanded", String(open));
+      });
+      scrim.addEventListener("click", () => {
+        sidebar.classList.remove("open");
+        navToggle.setAttribute("aria-expanded", "false");
+      });
+      sidebar.querySelectorAll(".side-link,.side-sub").forEach((a) => {
+        a.addEventListener("click", () => {
+          if (window.innerWidth <= 960) {
+            sidebar.classList.remove("open");
+            navToggle.setAttribute("aria-expanded", "false");
+          }
+        });
+      });
+
+      // ---- Active sidebar link via IntersectionObserver ----
+      const sectionIds = [
+        "overview","quickstart","initialize","load","widgets-factory",
+        "set-amount","set-order","render-address","render-shipping",
+        "render-payment","render-agreement","request-payment",
+        "events-reference","errors","pan-boundary","backend-preview","faq"
+      ];
+      const sideLinks = Array.from(sidebar.querySelectorAll(".side-link[href^='#'], .side-sub[href^='#']"));
+      const setActiveLink = (id) => {
+        for (const a of sideLinks) {
+          a.classList.toggle("active", a.getAttribute("href") === `#${id}`);
+        }
+      };
+      const obs = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) setActiveLink(e.target.id);
+          }
+        },
+        { rootMargin: "-20% 0px -65% 0px", threshold: 0 }
+      );
+      const observeSections = () => {
+        for (const id of sectionIds) {
+          const el = document.getElementById(id);
+          if (el) obs.observe(el);
+        }
+      };
+      observeSections();
+
+      // ---- Code tab switching ----
+      document.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-tab-trigger]");
+        if (!btn) return;
+        const targetId = btn.dataset.target;
+        const bar = btn.closest(".code-tab-bar");
+        const tabs = btn.closest(".code-tabs");
+        if (!bar || !tabs) return;
+        bar.querySelectorAll(".tab-btn").forEach((b) => b.removeAttribute("data-tab"));
+        btn.setAttribute("data-tab", "active");
+        tabs.querySelectorAll(".tab-pane").forEach((p) => p.removeAttribute("data-tab"));
+        const pane = document.getElementById(targetId);
+        if (pane) pane.setAttribute("data-tab", "active");
+      });
+
+      // ---- Copy button ----
+      document.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-copy]");
+        if (!btn) return;
+        const blockId = btn.dataset.copy;
+        const block = document.getElementById(blockId);
+        if (!block) return;
+        const text = Array.from(block.querySelectorAll(".src"))
+          .map((s) => s.textContent)
+          .join("\n");
+        navigator.clipboard.writeText(text).then(() => {
+          btn.textContent = "Copied";
+          setTimeout(() => { btn.textContent = "Copy"; }, 1200);
+        }).catch(() => {});
+      });
+
+      // ---- Footer built timestamp ----
+      const builtEl = document.getElementById("ft-built");
+      if (builtEl) {
+        builtEl.textContent = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
+      }
+    </script>
+  </body>
+</html>
