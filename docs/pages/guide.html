@@ -650,9 +650,9 @@
                     <div class="code-ln"><span class="ln">5</span><span class="src"><span class="tg">&lt;button</span> <span class="op">id=</span><span class="str">"pay"</span><span class="tg">&gt;</span>결제하기<span class="tg">&lt;/button&gt;</span></span></div>
                     <div class="code-ln"><span class="ln">6</span><span class="src"></span></div>
                     <div class="code-ln"><span class="ln">7</span><span class="src"><span class="tg">&lt;script</span> <span class="op">type=</span><span class="str">"module"</span><span class="tg">&gt;</span></span></div>
-                    <div class="code-ln"><span class="ln">8</span><span class="src">  <span class="kw">import</span> { <span class="fn">OpenCheckout</span> } <span class="kw">from</span> <span class="str">"https://cdn.opencheckout.dev/v1"</span>;</span></div>
+                    <div class="code-ln"><span class="ln">8</span><span class="src">  <span class="kw">import</span> { <span class="fn">OpenCheckout</span> } <span class="kw">from</span> <span class="str">"https://today-zh-learned.github.io/opencheckout/assets/opencheckout-widget.js"</span>;</span></div>
                     <div class="code-ln"><span class="ln">9</span><span class="src"></span></div>
-                    <div class="code-ln"><span class="ln">10</span><span class="src">  <span class="kw">const</span> oc = <span class="kw">await</span> <span class="fn">OpenCheckout.load</span>({ <span class="op">publishableKey:</span> <span class="str">"pk_test_sandbox_demo001"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">10</span><span class="src">  <span class="kw">const</span> oc = <span class="kw">await</span> <span class="fn">OpenCheckout.load</span>({ <span class="op">publishableKey:</span> <span class="str">"pk_test_demokey_DEMOnotProd123"</span> });</span></div>
                     <div class="code-ln"><span class="ln">11</span><span class="src">  <span class="kw">const</span> widgets = oc.<span class="fn">widgets</span>({ <span class="op">customerKey:</span> <span class="str">"ANONYMOUS"</span>, <span class="op">locale:</span> <span class="str">"ko"</span> });</span></div>
                     <div class="code-ln"><span class="ln">12</span><span class="src"></span></div>
                     <div class="code-ln"><span class="ln">13</span><span class="src">  widgets.<span class="fn">setAmount</span>({ <span class="op">value:</span> <span class="nm">49900</span>, <span class="op">currency:</span> <span class="str">"KRW"</span> });</span></div>
@@ -681,7 +681,7 @@
                     <div class="code-ln"><span class="ln">4</span><span class="src"><span class="cm">// main.ts</span></span></div>
                     <div class="code-ln"><span class="ln">5</span><span class="src"><span class="kw">import</span> { <span class="fn">OpenCheckout</span> } <span class="kw">from</span> <span class="str">"@opencheckout/widget"</span>;</span></div>
                     <div class="code-ln"><span class="ln">6</span><span class="src"></span></div>
-                    <div class="code-ln"><span class="ln">7</span><span class="src"><span class="kw">const</span> oc = <span class="kw">await</span> <span class="fn">OpenCheckout.load</span>({ <span class="op">publishableKey:</span> <span class="str">"pk_test_sandbox_demo001"</span> });</span></div>
+                    <div class="code-ln"><span class="ln">7</span><span class="src"><span class="kw">const</span> oc = <span class="kw">await</span> <span class="fn">OpenCheckout.load</span>({ <span class="op">publishableKey:</span> <span class="str">"pk_test_demokey_DEMOnotProd123"</span> });</span></div>
                     <div class="code-ln"><span class="ln">8</span><span class="src"><span class="kw">const</span> widgets = oc.<span class="fn">widgets</span>({ <span class="op">customerKey:</span> <span class="str">"ANONYMOUS"</span>, <span class="op">locale:</span> <span class="str">"ko"</span> });</span></div>
                     <div class="code-ln"><span class="ln">9</span><span class="src">widgets.<span class="fn">setAmount</span>({ <span class="op">value:</span> <span class="nm">49900</span>, <span class="op">currency:</span> <span class="str">"KRW"</span> });</span></div>
                     <div class="code-ln"><span class="ln">10</span><span class="src">widgets.<span class="fn">setOrder</span>({ <span class="op">id:</span> <span class="str">"order_abc"</span>, <span class="op">name:</span> <span class="str">"Glow Serum"</span> });</span></div>
@@ -763,7 +763,7 @@
             <div class="tab-pane" id="load-html" data-tab="active">
               <div class="code-block" id="load-html-code">
                 <button class="copy-btn" data-copy="load-html-code">Copy</button>
-                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="kw">import</span> { <span class="fn">OpenCheckout</span> } <span class="kw">from</span> <span class="str">"https://cdn.opencheckout.dev/v1"</span>;</span></div>
+                <div class="code-ln"><span class="ln">1</span><span class="src"><span class="kw">import</span> { <span class="fn">OpenCheckout</span> } <span class="kw">from</span> <span class="str">"https://today-zh-learned.github.io/opencheckout/assets/opencheckout-widget.js"</span>;</span></div>
                 <div class="code-ln"><span class="ln">2</span><span class="src"></span></div>
                 <div class="code-ln"><span class="ln">3</span><span class="src"><span class="kw">const</span> oc = <span class="kw">await</span> <span class="fn">OpenCheckout.load</span>({</span></div>
                 <div class="code-ln"><span class="ln">4</span><span class="src">  <span class="op">publishableKey:</span> <span class="str">"pk_test_myshop_a1b2c3"</span>,</span></div>
