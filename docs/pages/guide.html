@@ -549,6 +549,7 @@
           <a class="side-link" href="#render-shipping"><span>renderShipping</span><span class="meta">05</span></a>
           <a class="side-link" href="#render-payment"><span>renderPayment</span><span class="meta">06</span></a>
           <a class="side-link" href="#render-agreement"><span>renderAgreement</span><span class="meta">07</span></a>
+          <a class="side-link" href="#multi-clause"><span>↳ 다중 약관</span><span class="meta">07b</span></a>
         </div>
         <div class="side-group">
           <p class="side-title">결제 요청</p>
@@ -1199,11 +1200,6 @@
           <h2 id="h-render-agreement">renderAgreement()<a class="anchor-link" href="#render-agreement" aria-label="직접 링크">#</a></h2>
           <p class="section-lead">결제 약관 동의 위젯을 마운트합니다. 사용자가 동의하지 않으면 <code>requestPayment()</code>가 오류를 throw합니다.</p>
 
-          <div class="callout info">
-            <span class="callout-icon" aria-hidden="true">i</span>
-            <p><strong>v1.1 예정</strong>: 현재 위젯은 단일 체크박스(결제 약관 동의)만 제공합니다. v1.1에서는 한국 D2C 컴플라이언스 감사 권고에 따라 다중 약관 항목(개인정보 수집·이용 동의, 제3자 제공 동의 등)으로 확장될 예정입니다.</p>
-          </div>
-
           <h4>파라미터</h4>
           <div class="param-table-wrap">
             <table class="param-table" aria-label="renderAgreement 파라미터">
@@ -1214,6 +1210,12 @@
                   <td class="ptype">string | Element</td>
                   <td class="pdefault">—</td>
                   <td class="pdesc">마운트 타깃.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>clauses</code></td>
+                  <td class="ptype">ReadonlyArray&lt;{id, label, required, href?}&gt;</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">다중 약관 항목 배열. 생략하면 단일 체크박스 모드로 동작합니다. <a href="#multi-clause">다중 약관 섹션 참조</a>.</td>
                 </tr>
               </tbody>
             </table>
@@ -1229,6 +1231,11 @@
                   <td class="pname"><code>agreementStatusChange</code></td>
                   <td class="ptype">boolean</td>
                   <td class="pdesc">체크박스 상태가 변경될 때 emit. <code>true</code> = 동의, <code>false</code> = 철회.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>clauseChange</code></td>
+                  <td class="ptype">{ id: string; accepted: boolean }</td>
+                  <td class="pdesc">다중 약관 모드에서 개별 항목 상태가 변경될 때 emit. <code>id</code>는 <code>clauses</code> 배열의 항목 식별자입니다.</td>
                 </tr>
               </tbody>
             </table>
@@ -1248,6 +1255,78 @@
                 <div class="code-ln"><span class="ln">5</span><span class="src">});</span></div>
               </div>
             </div>
+          </div>
+        </section>
+
+        <!-- ===================== SECTION 7b: Multi-clause ===================== -->
+        <section class="doc-section" id="multi-clause" aria-labelledby="h-multi-clause">
+          <span class="section-tag"><span class="dot" aria-hidden="true"></span>07b — Widget</span>
+          <h2 id="h-multi-clause">다중 약관 (multi-clause)<a class="anchor-link" href="#multi-clause" aria-label="직접 링크">#</a></h2>
+          <p class="section-lead"><code>renderAgreement()</code>에 <code>clauses</code> 배열을 전달하면 항목별 체크박스가 렌더링됩니다. 필수(<code>required: true</code>) 항목이 모두 체크되어야 <code>agreementStatusChange</code>가 <code>true</code>를 emit합니다.</p>
+
+          <div class="callout warning">
+            <span class="callout-icon" aria-hidden="true">!</span>
+            <p><strong>법적 고지</strong>: 약관 텍스트는 머천트가 제공해야 합니다. SDK는 약관 본문을 포함하지 않습니다.</p>
+          </div>
+
+          <h4>clauses 항목 파라미터</h4>
+          <div class="param-table-wrap">
+            <table class="param-table" aria-label="clauses 항목 파라미터">
+              <thead><tr><th>이름</th><th>타입</th><th>기본값</th><th>설명</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="pname"><code>id</code><span class="req">*</span></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">약관 항목 고유 식별자. <code>clauseChange</code> 이벤트의 <code>id</code> 필드와 일치합니다.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>label</code><span class="req">*</span></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">체크박스 옆에 표시될 약관 이름.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>required</code><span class="req">*</span></td>
+                  <td class="ptype">boolean</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc"><code>true</code>이면 결제 진행에 필수 동의 항목. <code>false</code>이면 선택 동의.</td>
+                </tr>
+                <tr>
+                  <td class="pname"><code>href</code></td>
+                  <td class="ptype">string</td>
+                  <td class="pdefault">—</td>
+                  <td class="pdesc">약관 전문 링크 URL. 제공 시 항목 옆에 "전문 보기" 링크가 렌더링됩니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4>코드 예시</h4>
+          <div class="code-block" id="multi-clause-code">
+            <button class="copy-btn" data-copy="multi-clause-code">Copy</button>
+            <div class="code-ln"><span class="ln"> 1</span><span class="src"><span class="cm">&lt;!-- HTML --&gt;</span></span></div>
+            <div class="code-ln"><span class="ln"> 2</span><span class="src"><span class="tag">&lt;div id="agreement"&gt;&lt;/div&gt;</span></span></div>
+            <div class="code-ln"><span class="ln"> 3</span><span class="src"></span></div>
+            <div class="code-ln"><span class="ln"> 4</span><span class="src"><span class="cm">&lt;!-- JS --&gt;</span></span></div>
+            <div class="code-ln"><span class="ln"> 5</span><span class="src"><span class="kw">const</span> agrWidget = widgets.<span class="fn">renderAgreement</span>({</span></div>
+            <div class="code-ln"><span class="ln"> 6</span><span class="src">  <span class="op">selector:</span> <span class="str">"#agreement"</span>,</span></div>
+            <div class="code-ln"><span class="ln"> 7</span><span class="src">  <span class="op">clauses:</span> [</span></div>
+            <div class="code-ln"><span class="ln"> 8</span><span class="src">    { <span class="op">id:</span> <span class="str">"tos"</span>,     <span class="op">label:</span> <span class="str">"서비스 이용약관"</span>,   <span class="op">required:</span> <span class="kw">true</span>,  <span class="op">href:</span> <span class="str">"https://example.com/tos"</span> },</span></div>
+            <div class="code-ln"><span class="ln"> 9</span><span class="src">    { <span class="op">id:</span> <span class="str">"privacy"</span>, <span class="op">label:</span> <span class="str">"개인정보 처리방침"</span>, <span class="op">required:</span> <span class="kw">true</span>,  <span class="op">href:</span> <span class="str">"https://example.com/privacy"</span> },</span></div>
+            <div class="code-ln"><span class="ln">10</span><span class="src">    { <span class="op">id:</span> <span class="str">"promo"</span>,   <span class="op">label:</span> <span class="str">"마케팅 정보 수신"</span>,  <span class="op">required:</span> <span class="kw">false</span> },</span></div>
+            <div class="code-ln"><span class="ln">11</span><span class="src">  ],</span></div>
+            <div class="code-ln"><span class="ln">12</span><span class="src">});</span></div>
+            <div class="code-ln"><span class="ln">13</span><span class="src"></span></div>
+            <div class="code-ln"><span class="ln">14</span><span class="src"><span class="cm">// 전체 동의 상태 (필수 항목 모두 체크 시 true)</span></span></div>
+            <div class="code-ln"><span class="ln">15</span><span class="src">agrWidget.<span class="fn">on</span>(<span class="str">"agreementStatusChange"</span>, (allRequired) =&gt; {</span></div>
+            <div class="code-ln"><span class="ln">16</span><span class="src">  payBtn.disabled = !allRequired;</span></div>
+            <div class="code-ln"><span class="ln">17</span><span class="src">});</span></div>
+            <div class="code-ln"><span class="ln">18</span><span class="src"></span></div>
+            <div class="code-ln"><span class="ln">19</span><span class="src"><span class="cm">// 개별 항목 변경 이벤트</span></span></div>
+            <div class="code-ln"><span class="ln">20</span><span class="src">agrWidget.<span class="fn">on</span>(<span class="str">"clauseChange"</span>, ({ id, accepted }) =&gt; {</span></div>
+            <div class="code-ln"><span class="ln">21</span><span class="src">  console.<span class="fn">log</span>(<span class="str">`${id}: ${accepted}`</span>);</span></div>
+            <div class="code-ln"><span class="ln">22</span><span class="src">});</span></div>
           </div>
         </section>
 

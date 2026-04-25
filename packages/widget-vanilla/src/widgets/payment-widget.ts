@@ -3,14 +3,17 @@ import {
   DEFAULT_EASY_PAY_BRANDS,
   PAYMENT_METHOD_CATALOG,
   type PaymentMethodDescriptor,
-  easyPayBrandLabel,
   listKrBanks,
   selectVisibleMethods,
 } from "../internal/payment-methods.js";
 import { h } from "../internal/preact-runtime.js";
 import { OpenCheckoutShadowElement, defineOnce, resolveTarget } from "../internal/shadow-base.js";
 import type { SessionState } from "../internal/state.js";
-import type { Money } from "../internal/validate.js";
+import { renderBankDetail } from "./internal/payment-detail-bank.js";
+import { renderEasyPayDetail } from "./internal/payment-detail-easypay.js";
+import { renderInstallmentDetail } from "./internal/payment-detail-installment.js";
+import { buildPaymentLabels, formatMoney } from "./internal/payment-labels.js";
+import { renderPaymentTile } from "./internal/payment-method-tile.js";
 
 export type PaymentWidgetEvents = {
   paymentMethodSelect: string;
@@ -53,31 +56,11 @@ type Listeners = {
   easyPaySelect: Array<(p: string) => void>;
 };
 
-function formatMoney(amount: Money | undefined, locale: string): string {
-  if (!amount) return "";
-  const intlLocale =
-    locale === "ko" ? "ko-KR" : locale === "ja" ? "ja-JP" : locale === "zh-CN" ? "zh-CN" : "en-US";
-  try {
-    return new Intl.NumberFormat(intlLocale, {
-      style: "currency",
-      currency: amount.currency,
-      maximumFractionDigits: amount.currency === "KRW" || amount.currency === "JPY" ? 0 : 2,
-    }).format(amount.value);
-  } catch {
-    return `${amount.value} ${amount.currency}`;
-  }
-}
-
 function buildInstallmentMonths(max: number): readonly number[] {
   const cap = Math.max(2, Math.min(24, Math.floor(max)));
   const out: number[] = [0]; // 0 = 일시불
   for (let i = 2; i <= cap; i += 1) out.push(i);
   return out;
-}
-
-function installmentLabel(value: number, locale: string): string {
-  if (value === 0) return locale === "en" ? "Pay in full" : "일시불";
-  return locale === "en" ? `${value} mo` : `${value}개월`;
 }
 
 export function mountPaymentWidget(
@@ -105,28 +88,7 @@ export function mountPaymentWidget(
       ? options.easyPayBrands
       : DEFAULT_EASY_PAY_BRANDS;
 
-  const labels =
-    state.locale === "en"
-      ? {
-          eyebrow: "PAYMENT",
-          title: "Payment method",
-          installment: "Installments",
-          bank: "Bank",
-          transferNote: "A virtual bank account will be issued after payment.",
-          easyPay: "Easy pay",
-          country: "Issuing country",
-          countryUnknown: "Select country in the address widget",
-        }
-      : {
-          eyebrow: "결제",
-          title: "결제 수단",
-          installment: "할부 개월수",
-          bank: "은행",
-          transferNote: "결제 후 가상 계좌가 발급됩니다.",
-          easyPay: "간편결제 브랜드",
-          country: "발급 국가",
-          countryUnknown: "주소 위젯에서 국가를 선택하세요",
-        };
+  const labels = buildPaymentLabels(state.locale);
 
   // Initialize state defaults if missing
   if (!state.paymentSelected) state.paymentSelected = selected;
@@ -179,54 +141,6 @@ export function mountPaymentWidget(
     el.rerender();
   };
 
-  const renderIcon = (descriptor: PaymentMethodDescriptor) =>
-    h(
-      "span",
-      { class: "oc-pm-icon", "aria-hidden": "true" },
-      h(
-        "svg",
-        {
-          width: "16",
-          height: "16",
-          viewBox: "0 0 16 16",
-          fill: "none",
-          stroke: "currentColor",
-          "stroke-width": "1.4",
-          "stroke-linecap": "round",
-          "stroke-linejoin": "round",
-        },
-        h("path", { d: descriptor.iconPath }),
-      ),
-    );
-
-  const renderInstallmentDetail = () => {
-    const current = state.paymentInstallment ?? 0;
-    return h(
-      "div",
-      { class: "oc-pm-detail-inner" },
-      h("p", { class: "oc-pm-detail-title" }, labels.installment),
-      h(
-        "div",
-        { class: "oc-installment-grid", role: "radiogroup", "aria-label": labels.installment },
-        installments.map((m) =>
-          h(
-            "button",
-            {
-              type: "button",
-              class: "oc-installment-cell",
-              role: "radio",
-              "aria-checked": m === current ? "true" : "false",
-              "data-selected": m === current ? "true" : "false",
-              key: `inst-${m}`,
-              onClick: () => setInstallment(m),
-            },
-            installmentLabel(m, state.locale),
-          ),
-        ),
-      ),
-    );
-  };
-
   const renderForeignCardDetail = () => {
     const country = state.addressSelected?.country;
     const text = country ? country : labels.countryUnknown;
@@ -241,142 +155,31 @@ export function mountPaymentWidget(
   const renderTransferDetail = () =>
     h("div", { class: "oc-pm-detail-inner" }, h("p", { class: "oc-pm-note" }, labels.transferNote));
 
-  const renderVirtualAccountDetail = () => {
-    const banks = listKrBanks();
-    const current = state.paymentBankCode ?? banks[0]?.code ?? "";
-    return h(
-      "div",
-      { class: "oc-pm-detail-inner" },
-      h("p", { class: "oc-pm-detail-title" }, labels.bank),
-      h(
-        "select",
-        {
-          class: "oc-bank-select",
-          "aria-label": labels.bank,
-          value: current,
-          onChange: (ev: Event) => setBank((ev.target as HTMLSelectElement).value),
-        },
-        banks.map((b) =>
-          h("option", { value: b.code, key: b.code }, state.locale === "en" ? b.nameEn : b.nameKo),
-        ),
-      ),
-    );
-  };
-
-  const renderEasyPayDetail = () => {
-    const current = state.paymentEasyPayBrand ?? easyPayBrands[0];
-    return h(
-      "div",
-      { class: "oc-pm-detail-inner" },
-      h("p", { class: "oc-pm-detail-title" }, labels.easyPay),
-      h(
-        "div",
-        { class: "oc-easy-pay-grid", role: "radiogroup", "aria-label": labels.easyPay },
-        easyPayBrands.map((brand) =>
-          h(
-            "button",
-            {
-              type: "button",
-              class: "oc-easy-pay-chip",
-              role: "radio",
-              "aria-checked": brand === current ? "true" : "false",
-              "data-selected": brand === current ? "true" : "false",
-              key: `epb-${brand}`,
-              onClick: () => setEasyPay(brand),
-            },
-            easyPayBrandLabel(brand, state.locale),
-          ),
-        ),
-      ),
-    );
-  };
-
   const renderDetailFor = (code: string) => {
     if (code === "card") {
       const country = state.addressSelected?.country ?? state.order?.buyerCountry ?? "KR";
-      if (country === "KR") return renderInstallmentDetail();
+      if (country === "KR")
+        return renderInstallmentDetail({ state, installments, label: labels.installment, onSelect: setInstallment });
       return renderForeignCardDetail();
     }
     if (code === "transfer") return renderTransferDetail();
-    if (code === "virtual-account") return renderVirtualAccountDetail();
+    if (code === "virtual-account")
+      return renderBankDetail({ state, label: labels.bank, onSelect: setBank });
     if (code === "foreign-card") return renderForeignCardDetail();
-    if (code === "easy-pay") return renderEasyPayDetail();
+    if (code === "easy-pay")
+      return renderEasyPayDetail({ state, easyPayBrands, label: labels.easyPay, onSelect: setEasyPay });
     return null;
   };
 
-  const renderTile = (descriptor: PaymentMethodDescriptor, visibleList: readonly PaymentMethodDescriptor[]) => {
-    const isSelected = selected === descriptor.code;
-    const labelText = state.locale === "en" ? descriptor.labelEn : descriptor.labelKo;
-    const detail = isSelected ? renderDetailFor(descriptor.code) : null;
-    return h(
-      "div",
-      { class: "oc-pm-tile-wrap", key: `wrap-${descriptor.code}` },
-      h(
-        "div",
-        {
-          class: "oc-pm-tile",
-          role: "radio",
-          tabindex: isSelected ? "0" : "-1",
-          "aria-checked": isSelected ? "true" : "false",
-          "data-selected": isSelected ? "true" : "false",
-          "data-method": descriptor.code,
-          key: `tile-${descriptor.code}`,
-          onClick: () => select(descriptor.code),
-          onKeyDown: (ev: KeyboardEvent) => {
-            // Space/Enter on an already-selected tile: no-op (selection follows focus).
-            if (ev.key === " " || ev.key === "Enter") {
-              ev.preventDefault();
-              return;
-            }
-            // Roving tabindex arrow navigation handled on the radiogroup container.
-            // Forward navigation keys to the container handler so focus + selection move.
-            const isNavKey = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"].includes(ev.key);
-            if (isNavKey) {
-              ev.preventDefault();
-              const currentIdx = visibleList.findIndex((d) => d.code === descriptor.code);
-              let nextIdx = currentIdx;
-              if (ev.key === "ArrowRight" || ev.key === "ArrowDown") {
-                nextIdx = (currentIdx + 1) % visibleList.length;
-              } else if (ev.key === "ArrowLeft" || ev.key === "ArrowUp") {
-                nextIdx = (currentIdx - 1 + visibleList.length) % visibleList.length;
-              } else if (ev.key === "Home") {
-                nextIdx = 0;
-              } else if (ev.key === "End") {
-                nextIdx = visibleList.length - 1;
-              }
-              const nextCode = visibleList[nextIdx]?.code;
-              if (nextCode) {
-                // Capture root reference before select() triggers re-render (currentTarget nulls out async).
-                const tileRoot = (ev.currentTarget as HTMLElement).getRootNode() as ShadowRoot | Document;
-                select(nextCode);
-                // Move focus to the newly selected tile after re-render.
-                requestAnimationFrame(() => {
-                  const nextTile = tileRoot.querySelector(`[data-method="${nextCode}"]`) as HTMLElement | null;
-                  nextTile?.focus();
-                });
-              }
-            }
-          },
-        },
-        renderIcon(descriptor),
-        h("span", { class: "oc-pm-label" }, labelText),
-        h("span", { class: "oc-pm-chevron", "aria-hidden": "true" }, ">"),
-        // Hidden native radio kept for form-association tests / a11y fallback (PAN-free).
-        h("input", {
-          class: "oc-pm-tile-radio",
-          type: "radio",
-          name: "oc-payment",
-          value: descriptor.code,
-          checked: isSelected,
-          tabindex: "-1",
-          "aria-hidden": "true",
-          readonly: true,
-          onChange: () => select(descriptor.code),
-        }),
-      ),
-      h("div", { class: "oc-pm-detail", "data-open": isSelected ? "true" : "false" }, detail),
-    );
-  };
+  const renderTile = (descriptor: PaymentMethodDescriptor, visibleList: readonly PaymentMethodDescriptor[]) =>
+    renderPaymentTile({
+      descriptor,
+      visibleList,
+      isSelected: selected === descriptor.code,
+      locale: state.locale,
+      detail: selected === descriptor.code ? renderDetailFor(descriptor.code) : null,
+      onSelect: select,
+    });
 
   const renderSkeleton = () =>
     h(

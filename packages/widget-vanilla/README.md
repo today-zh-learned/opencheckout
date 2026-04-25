@@ -81,8 +81,8 @@ CDN 사용:
 | `renderAddress` | `(opts: { selector: string\|Element; variantKey?: string }) => AddressWidget` | 주소 위젯 마운트 |
 | `renderShipping` | `(opts: { selector: string\|Element }) => ShippingWidget` | 배송 위젯 마운트 |
 | `renderPayment` | `(opts: { selector: string\|Element; variantKey?: string }) => PaymentWidget` | 결제 수단 위젯 마운트 |
-| `renderAgreement` | `(opts: { selector: string\|Element }) => AgreementWidget` | 약관 동의 위젯 마운트 |
-| `requestPayment` | `(opts: { successUrl: string; failUrl: string; customerEmail?: string; metadata?: Record<string, unknown> }) => Promise<void>` | 결제 요청 초기화 |
+| `renderAgreement` | `(opts: { selector: string\|Element; clauses?: ReadonlyArray<{id,label,required,href?}> }) => AgreementWidget` | 약관 동의 위젯 마운트 |
+| `requestPayment` | `(opts: { successUrl: string; failUrl: string; customerEmail?: string }) => Promise<void>` | 결제 요청 초기화. PREVIEW: v1 ships mock redirect; live PG wiring lands in v1.0.1. |
 | `destroy` | `() => void` | 모든 마운트된 위젯 정리 |
 
 ### 서브 위젯 이벤트
@@ -98,6 +98,7 @@ CDN 사용:
 | `PaymentWidget` | `"bankSelect"` | `string` (가상계좌 은행 코드, 예: `"shinhan"`, `"kb"`) |
 | `PaymentWidget` | `"easyPaySelect"` | `string` (간편결제 브랜드 코드, 기본: `"paypal"`) |
 | `AgreementWidget` | `"agreementStatusChange"` | `boolean` |
+| `AgreementWidget` | `"clauseChange"` | `{ id: string; accepted: boolean }` |
 
 ### PaymentWidget 옵션
 

@@ -568,11 +568,16 @@
         text-align: left;
       }
 
+      #card-address  { --pulse-color: #5b6ee1; }
+      #card-shipping { --pulse-color: #14b8a6; }
+      #card-payment  { --pulse-color: #f5c842; }
+      #card-agreement{ --pulse-color: #10b981; }
+
       .mount-card.pulse-now { animation: cardpulse 600ms var(--ease) both; }
       @keyframes cardpulse {
-        0% { box-shadow: 0 0 0 0 rgba(67, 56, 202, 0); transform: scale(1); }
-        30% { box-shadow: 0 0 0 6px rgba(67, 56, 202, 0.18); transform: scale(1.005); }
-        100% { box-shadow: 0 0 0 0 rgba(67, 56, 202, 0); transform: scale(1); }
+        0%   { box-shadow: 0 0 0 0   var(--pulse-color, rgba(67,56,202,0));    transform: scale(1); }
+        30%  { box-shadow: 0 0 0 4px var(--pulse-color, rgba(67,56,202,0.18)); transform: scale(1.005); }
+        100% { box-shadow: 0 0 0 0   var(--pulse-color, rgba(67,56,202,0));    transform: scale(1); }
       }
 
       /* ---------- Stage actions ---------- */
@@ -885,13 +890,13 @@
       /* Mobile frame */
       .device-mobile {
         width: 375px;
-        height: 750px;
+        min-height: 750px;
+        overflow-y: auto;
         padding: 12px 10px;
         border-radius: 42px;
         background: #1a1a1c;
         box-shadow: 0 30px 60px -15px rgba(10, 10, 10, 0.35), 0 8px 16px rgba(10, 10, 10, 0.12);
         position: relative;
-        overflow: hidden;
         animation: viewfade 320ms var(--ease) both;
       }
       .device-mobile::before {
@@ -1003,8 +1008,9 @@
       .step.is-active .num { background: var(--ink); color: var(--bg); border-color: var(--ink); }
       .step.is-done { color: var(--success); }
       .step.is-done .num { background: var(--success); color: #fff; border-color: var(--success); }
-      .step .arrow { color: var(--line-strong); font-size: 9px; }
+      .step .arrow { color: var(--line-strong); display: inline-flex; align-items: center; vertical-align: middle; }
       .step:last-child .arrow { display: none; }
+      .step.is-done .arrow svg, .step.is-active .arrow svg { stroke: var(--success); }
 
       .merchant-body {
         display: grid;
@@ -1372,6 +1378,13 @@
                 <label for="orderName"><span>orderName</span></label>
                 <input id="orderName" name="orderName" value="Glow Serum" autocomplete="off" />
               </div>
+              <div class="field">
+                <label for="clausesPreset"><span>agreement clauses</span></label>
+                <select id="clausesPreset" name="clausesPreset">
+                  <option value="single" selected>Single (default)</option>
+                  <option value="multi">Multi-clause demo</option>
+                </select>
+              </div>
             </div>
             <div class="config-actions">
               <button class="btn accent full" type="submit" id="mount-btn">Re-mount with new config</button>
@@ -1563,10 +1576,10 @@
                   </header>
 
                   <nav class="stepper" id="stepper-desktop" aria-label="Checkout progress">
-                    <span class="step is-active" data-step="address"><span class="num">1</span>배송지<span class="arrow">›</span></span>
-                    <span class="step" data-step="shipping"><span class="num">2</span>배송수단<span class="arrow">›</span></span>
-                    <span class="step" data-step="payment"><span class="num">3</span>결제<span class="arrow">›</span></span>
-                    <span class="step" data-step="agreement"><span class="num">4</span>약관<span class="arrow">›</span></span>
+                    <span class="step is-active" data-step="address"><span class="num">1</span>배송지<span class="arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
+                    <span class="step" data-step="shipping"><span class="num">2</span>배송수단<span class="arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
+                    <span class="step" data-step="payment"><span class="num">3</span>결제<span class="arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
+                    <span class="step" data-step="agreement"><span class="num">4</span>약관<span class="arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
                     <span class="step" data-step="done"><span class="num">5</span>완료</span>
                   </nav>
 
@@ -1668,7 +1681,7 @@
               <!-- Mobile frame (hidden until toggled) -->
               <div class="device-mobile" id="device-mobile" hidden>
                 <div class="status-bar" aria-hidden="true">
-                  <span id="mobile-clock">9:41</span>
+                  <span id="mock-clock"></span>
                   <span class="glyphs">●●● 5G ▮</span>
                 </div>
                 <div class="device-screen">
@@ -1681,10 +1694,10 @@
                       <span class="merchant-back">cart</span>
                     </header>
                     <nav class="stepper" id="stepper-mobile" aria-label="Checkout progress (mobile)">
-                      <span class="step is-active" data-step="address"><span class="num">1</span>주소<span class="arrow">›</span></span>
-                      <span class="step" data-step="shipping"><span class="num">2</span>배송<span class="arrow">›</span></span>
-                      <span class="step" data-step="payment"><span class="num">3</span>결제<span class="arrow">›</span></span>
-                      <span class="step" data-step="agreement"><span class="num">4</span>약관<span class="arrow">›</span></span>
+                      <span class="step is-active" data-step="address"><span class="num">1</span>주소<span class="arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
+                      <span class="step" data-step="shipping"><span class="num">2</span>배송<span class="arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
+                      <span class="step" data-step="payment"><span class="num">3</span>결제<span class="arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
+                      <span class="step" data-step="agreement"><span class="num">4</span>약관<span class="arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
                       <span class="step" data-step="done"><span class="num">5</span>완료</span>
                     </nav>
                     <div class="merchant-body is-mobile">
@@ -1802,6 +1815,15 @@
     </script>
     <script type="module">
       const $ = (id) => document.getElementById(id);
+
+      // Live mock clock
+      function updateMockClock() {
+        const el = $("mock-clock");
+        if (el) el.textContent = new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+      }
+      updateMockClock();
+      setInterval(updateMockClock, 30000);
+
       const form = $("config-form");
       const logEl = $("event-log");
       const logCountEl = $("log-count");
@@ -1861,6 +1883,12 @@
         log("error", "sdk:load-failed", { message: String(err && err.message) });
       }
 
+      const MULTI_CLAUSES = [
+        { id: "tos",     label: "서비스 이용약관",   required: true,  href: "https://example.com/tos" },
+        { id: "privacy", label: "개인정보 처리방침", required: true,  href: "https://example.com/privacy" },
+        { id: "promo",   label: "마케팅 정보 수신",  required: false },
+      ];
+
       function readConfig() {
         const data = new FormData(form);
         return {
@@ -1872,6 +1900,7 @@
           currency: String(data.get("currency") || "KRW"),
           orderId: String(data.get("orderId") || "").trim(),
           orderName: String(data.get("orderName") || "").trim(),
+          clausesPreset: String(data.get("clausesPreset") || "single"),
         };
       }
 
@@ -1954,7 +1983,12 @@
           mounted.address = widgets.renderAddress({ selector: "#oc-address" });
           mounted.shipping = widgets.renderShipping({ selector: "#oc-shipping" });
           mounted.payment = widgets.renderPayment({ selector: "#oc-payment" });
-          mounted.agreement = widgets.renderAgreement({ selector: "#oc-agreement" });
+          const agreementOpts = { selector: "#oc-agreement" };
+          if (c.clausesPreset === "multi") {
+            agreementOpts.clauses = MULTI_CLAUSES;
+            log("config", "config:clauses", { preset: "multi", count: MULTI_CLAUSES.length });
+          }
+          mounted.agreement = widgets.renderAgreement(agreementOpts);
 
           for (const k of Object.keys(mounted)) {
             setMountedFlag(k, true);
@@ -2424,20 +2458,39 @@
         }
       }
 
-      // Mobile clock — write once on load
-      (function tickMobileClock() {
-        const el = $("mobile-clock");
-        if (!el) return;
-        const d = new Date();
-        const hh = String(d.getHours()).padStart(2, "0");
-        const mm = String(d.getMinutes()).padStart(2, "0");
-        el.textContent = `${hh}:${mm}`;
-      })();
-
       // ---------- Wire events ----------
       form.addEventListener("submit", mountAll);
       form.addEventListener("input", () => { renderCode(); updateSummaryTotals(); });
       form.addEventListener("change", () => { renderCode(); updateSummaryTotals(); });
+
+      // Re-mount agreement widget when clauses preset changes
+      $("clausesPreset").addEventListener("change", () => {
+        if (!widgets) return;
+        if (mounted.agreement) {
+          try { mounted.agreement.destroy(); } catch {}
+          mounted.agreement = null;
+        }
+        const c = readConfig();
+        const agreementOpts = { selector: "#oc-agreement" };
+        if (c.clausesPreset === "multi") {
+          agreementOpts.clauses = MULTI_CLAUSES;
+          log("config", "config:clauses", { preset: "multi", count: MULTI_CLAUSES.length });
+        } else {
+          log("config", "config:clauses", { preset: "single" });
+        }
+        try {
+          mounted.agreement = widgets.renderAgreement(agreementOpts);
+          mounted.agreement.on("agreementStatusChange", (agreed) => {
+            updateState({ agreement: !!agreed });
+            pulseCard("agreement");
+            advanceStepper("agreement");
+            updateCta();
+            log("agreement", "agreementStatusChange", { agreed });
+          });
+        } catch (err) {
+          log("error", "agreement:remount-failed", { message: String(err?.message || err) });
+        }
+      });
 
       // View tabs (Individual / Integrated)
       document.querySelectorAll("[data-view-tab]").forEach((btn) => {
