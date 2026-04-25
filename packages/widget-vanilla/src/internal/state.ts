@@ -21,6 +21,21 @@ export type AddressSelection = {
   readonly postal: string;
   /** @deprecated Use `postal`. Kept as a mirror of `postal` for backward compatibility. */
   readonly zip: string;
+  /**
+   * google.type.PostalAddress proto-compatible aliases.
+   * Populated additively at emit time so downstream consumers can map
+   * directly into Google Maps Platform / GCP services without re-keying.
+   */
+  readonly regionCode?: string;
+  readonly languageCode?: string;
+  readonly postalCode?: string;
+  readonly sortingCode?: string;
+  readonly administrativeArea?: string;
+  readonly locality?: string;
+  readonly sublocality?: string;
+  readonly addressLines?: readonly string[];
+  readonly recipients?: readonly string[];
+  readonly organization?: string;
 };
 
 export type ShippingSelection = {

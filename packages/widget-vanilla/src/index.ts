@@ -55,6 +55,14 @@ export {
   type CountrySchema,
 } from "./internal/address-data.js";
 
+export { formatAddress, type FormatAddressOptions } from "./internal/address-format.js";
+
+export {
+  loadCountrySchema,
+  getCachedSchema,
+  type LoadCountryOptions,
+} from "./internal/address-lazy.js";
+
 export {
   CUSTOMER_KEY_ANONYMOUS,
   OpenCheckoutValidationError,

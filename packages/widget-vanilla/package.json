@@ -14,10 +14,10 @@
   "types": "./dist/index.d.ts",
   "files": ["dist"],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean",
+    "build": "tsup",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src/",
-    "dev": "tsup src/index.ts --format esm --watch",
+    "dev": "tsup --watch",
     "test:small": "vitest run --reporter=verbose",
     "clean": "rm -rf dist"
   },

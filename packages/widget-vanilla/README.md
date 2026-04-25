@@ -91,7 +91,7 @@ CDN 사용:
 
 | 위젯 | 이벤트 | 페이로드 |
 |------|-------|---------|
-| `AddressWidget` | `"addressSelect"` | `{ country: string; zip: string; line1: string }` |
+| `AddressWidget` | `"addressSelect"` | `AddressSelection` — 구조 필드(`country`, `admin1`, `admin2`, `city`, `line1`, `line2`, `postal`, `zip`) + `google.type.PostalAddress` 호환 alias(`regionCode`, `languageCode`, `postalCode`, `administrativeArea`, `locality`, `sublocality`, `addressLines[]`, `recipients[]`, `sortingCode?`, `organization?`) |
 | `ShippingWidget` | `"methodSelect"` | `{ carrier: string; rate: number; currency: "KRW" }` |
 | `PaymentWidget` | `"paymentMethodSelect"` | `string` (method code: `"card"` \| `"transfer"` \| `"virtual-account"` \| `"foreign-card"` \| `"easy-pay"`) |
 | `PaymentWidget` | `"installmentChange"` | `number` (개월수, 0 = 일시불). KR 카드 선택 시에만 emit |
@@ -119,6 +119,46 @@ const unsubscribe = addr.on("addressSelect", (sel) => {
   console.log(`배송지: ${sel.country} ${sel.zip}`);
 });
 ```
+
+### formatAddress(address, opts?)
+
+국가별 표준 우편 형식에 맞춘 사람용 라벨을 반환합니다. 결제 완료 화면, 영수증, 주문 확인 메일 등에 활용하세요.
+
+```ts
+import { formatAddress } from "@opencheckout/widget";
+
+const label = formatAddress(addressSelection, { locale: "ko", multiline: true });
+// 예: "우편번호 06236\n서울특별시 강남구 테헤란로 521"
+```
+
+| 파라미터 | 타입 | 기본값 | 설명 |
+|---------|------|--------|------|
+| `address` | `AddressSelection` | — | `addressSelect` 이벤트 페이로드 |
+| `opts.locale` | `"ko" \| "en"` | `"en"` | KR에서 한글/로마자 순서 선택. 그 외 국가는 자체 표준을 따름 |
+| `opts.multiline` | `boolean` | `true` | `false`이면 `, ` 로 join |
+
+지원 국가별 템플릿: KR / JP / CN / HK / SG / US (그 외는 US-스타일 fallback). 모든 템플릿은 OpenCheckout가 자체 작성했으며 외부 데이터셋(opencagedata 등) 코드는 사용하지 않습니다.
+
+### loadCountrySchema(code, opts?)
+
+내장된 16개국 외 영토에 대한 schema를 런타임에 가져옵니다 (Google libaddressinput 미러 사용). 결과는 모듈 단위로 캐시됩니다.
+
+```ts
+import { loadCountrySchema } from "@opencheckout/widget";
+
+const mx = await loadCountrySchema("MX");
+if (mx) {
+  // CountrySchema { code: "MX", postalRegex, fields, required, ... }
+}
+```
+
+| 파라미터 | 타입 | 기본값 | 설명 |
+|---------|------|--------|------|
+| `code` | `string` | — | ISO-3166-1 alpha-2 |
+| `opts.fetcher` | `typeof fetch` | `globalThis.fetch` | 테스트용 mock 주입 |
+| `opts.baseUrl` | `string` | `https://chromium-i18n.appspot.com/ssl-address` | self-host mirror 주소 |
+
+실패하거나 네트워크가 없으면 `undefined`를 반환합니다 (이후 `getCountrySchema()`가 `FALLBACK_COUNTRY`로 폴백). 모든 변환된 schema는 `assertPanFree()` 검사를 통과해야만 캐시에 저장됩니다 (ADR-003).
 
 ## 상수
 
@@ -163,9 +203,9 @@ import {
 
 ## 번들 크기
 
-ESM 빌드 (docs 페이지 자산 기준): **94.7 KB** (raw) / **20.7 KB** (gzipped)
+ESM 빌드 (docs 페이지 자산 기준): **100.3 KB** (raw) / **23.1 KB** (gzipped)
 
-25 KB gzipped 예산 범위 내.
+25 KB gzipped 예산 범위 내. 16개국 schema(KR/JP/CN/TW/HK/SG/US/CA/GB/AU/NZ/DE/FR/IT/ES/BR), `formatAddress` printable 라벨, lazy `loadCountrySchema()` fetch, KR 시·도→시·군·구 cascading, 한글 초성 검색, libaddressinput 기반 우편번호 정규식까지 포함된 크기입니다.
 
 ## 링크
 

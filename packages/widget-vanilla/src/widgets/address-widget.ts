@@ -96,8 +96,12 @@ export function mountAddressWidget(
   };
 
   const buildSnapshot = (): AddressSelection => {
+    const cc = schema.code === "ZZ" ? countryCode : schema.code;
+    const lines: string[] = [];
+    if (fields.line1) lines.push(fields.line1);
+    if (fields.line2) lines.push(fields.line2);
     const next: AddressSelection = {
-      country: schema.code === "ZZ" ? countryCode : schema.code,
+      country: cc,
       ...(fields.admin1 ? { admin1: fields.admin1 } : {}),
       ...(fields.admin1Code ? { admin1Code: fields.admin1Code } : {}),
       ...(fields.admin2 ? { admin2: fields.admin2 } : {}),
@@ -107,6 +111,15 @@ export function mountAddressWidget(
       ...(fields.line2 ? { line2: fields.line2 } : {}),
       postal: fields.postal,
       zip: fields.postal,
+      // google.type.PostalAddress proto-compatible alias view (additive).
+      regionCode: cc,
+      languageCode: state.locale,
+      ...(fields.postal ? { postalCode: fields.postal } : {}),
+      ...(fields.admin1 ? { administrativeArea: fields.admin1 } : {}),
+      ...(fields.city ? { locality: fields.city } : {}),
+      ...(fields.admin2 ? { sublocality: fields.admin2 } : {}),
+      addressLines: lines,
+      recipients: [],
     };
     return next;
   };

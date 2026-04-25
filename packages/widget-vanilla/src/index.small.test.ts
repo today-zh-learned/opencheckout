@@ -12,12 +12,15 @@ import {
   assertPanFree,
   containsPan,
   createWidgetMessage,
+  formatAddress,
   getCountrySchema,
   isOpenCheckoutMessage,
   isValidPostal,
   load,
+  loadCountrySchema,
   searchCountries,
 } from "./index.js";
+import { _clearCountrySchemaCache } from "./internal/address-lazy.js";
 
 function makeTarget(id: string): HTMLElement {
   const el = document.createElement("div");
@@ -277,10 +280,11 @@ describe("setOrder / setAmount PAN scan", () => {
 });
 
 describe("address-data global registry", () => {
-  it("registers 15 countries indexed by ISO code", () => {
-    expect(COUNTRIES.length).toBe(15);
+  it("registers 16 countries indexed by ISO code", () => {
+    expect(COUNTRIES.length).toBe(16);
     expect(COUNTRY_BY_CODE.get("KR")?.nameKo).toBe("대한민국");
     expect(COUNTRY_BY_CODE.get("US")?.nameEn).toBe("United States");
+    expect(COUNTRY_BY_CODE.get("BR")?.nameEn).toBe("Brazil");
   });
 
   it("KR schema exposes all 17 admin1 entries", () => {
@@ -336,8 +340,8 @@ describe("address-data search", () => {
     expect(result.some((c) => c.code === "JP")).toBe(true);
   });
 
-  it("returns all 15 for empty query", () => {
-    expect(searchCountries("", "en").length).toBe(15);
+  it("returns all 16 for empty query", () => {
+    expect(searchCountries("", "en").length).toBe(16);
   });
 
   it("falls back to ZZ for unknown ISO code", () => {
@@ -648,5 +652,199 @@ describe("address widget — global behaviour", () => {
     const host = document.getElementById("addr3")?.firstElementChild as HTMLElement;
     const numericInput = host?.shadowRoot?.querySelector('input[inputmode="numeric"]');
     expect(numericInput).toBeNull();
+  });
+});
+
+describe("address widget — google.type.PostalAddress alias view", () => {
+  it("populates regionCode/locality/administrativeArea/addressLines on emit", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS", locale: "ko" });
+    widgets.setAmount({ value: 1000, currency: "KRW" });
+    widgets.setOrder({ id: "order_1", name: "Test", buyerCountry: "KR" });
+
+    makeTarget("addr-proto");
+    const addr = widgets.renderAddress({ selector: "#addr-proto" });
+
+    let captured: Record<string, unknown> | null = null;
+    addr.on("addressSelect", (sel) => {
+      captured = sel as unknown as Record<string, unknown>;
+    });
+
+    const host = document.getElementById("addr-proto")?.firstElementChild as HTMLElement;
+    const postalInput = host?.shadowRoot?.querySelector(
+      'input[inputmode="numeric"]',
+    ) as HTMLInputElement;
+    postalInput.value = "06236";
+    postalInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(captured).not.toBeNull();
+    const c = captured as unknown as {
+      regionCode: string;
+      languageCode: string;
+      postalCode: string;
+      addressLines: readonly string[];
+      recipients: readonly string[];
+    };
+    expect(c.regionCode).toBe("KR");
+    expect(c.languageCode).toBe("ko");
+    expect(c.postalCode).toBe("06236");
+    expect(Array.isArray(c.addressLines)).toBe(true);
+    expect(Array.isArray(c.recipients)).toBe(true);
+    expect(c.recipients.length).toBe(0);
+  });
+});
+
+describe("formatAddress — country-aware printable label", () => {
+  it("KR ko produces 우편번호-prefixed first line", () => {
+    const out = formatAddress(
+      {
+        country: "KR",
+        admin1: "서울특별시",
+        admin2: "강남구",
+        city: "",
+        line1: "테헤란로 521",
+        postal: "06236",
+        zip: "06236",
+      },
+      { locale: "ko" },
+    );
+    expect(out.split("\n")[0]).toBe("우편번호 06236");
+    expect(out).toContain("테헤란로 521");
+  });
+
+  it("US default places city, state, postal on cityLine and country last", () => {
+    const out = formatAddress({
+      country: "US",
+      admin1: "CA",
+      city: "San Francisco",
+      line1: "1455 Market St",
+      line2: "Floor 6",
+      postal: "94103",
+      zip: "94103",
+    });
+    const lines = out.split("\n");
+    expect(lines[0]).toBe("1455 Market St");
+    expect(lines[1]).toBe("Floor 6");
+    expect(lines[2]).toBe("San Francisco, CA 94103");
+    expect(lines[3]).toBe("United States");
+  });
+
+  it("JP starts with 〒postal and packs region tightly", () => {
+    const out = formatAddress({
+      country: "JP",
+      admin1: "東京都",
+      city: "渋谷区",
+      line1: "1-2-3",
+      postal: "150-0001",
+      zip: "150-0001",
+    });
+    expect(out).toMatch(/^〒150-0001/);
+    expect(out).toContain("東京都渋谷区");
+  });
+
+  it("multiline=false joins with comma", () => {
+    const out = formatAddress(
+      {
+        country: "SG",
+        line1: "1 Marina Bay",
+        postal: "018989",
+        zip: "018989",
+      },
+      { multiline: false },
+    );
+    expect(out).toBe("1 Marina Bay, Singapore 018989");
+  });
+});
+
+describe("loadCountrySchema — lazy libaddressinput fetch", () => {
+  beforeEach(() => {
+    _clearCountrySchemaCache();
+  });
+
+  it("converts a libaddressinput response into our CountrySchema and caches it", async () => {
+    const fakeResponse = {
+      key: "MX",
+      name: "MEXICO",
+      fmt: "%N%n%O%n%A%n%D%n%Z %C, %S",
+      require: "ACZS",
+      zip: "\\d{5}",
+      zipex: "02860,01000",
+    };
+    const fetcher = vi.fn(async (url: string) => {
+      expect(url).toContain("/data/MX");
+      return {
+        ok: true,
+        json: async () => fakeResponse,
+      } as unknown as Response;
+    });
+
+    const schema = await loadCountrySchema("mx", { fetcher: fetcher as unknown as typeof fetch });
+    expect(schema).toBeDefined();
+    expect(schema?.code).toBe("MX");
+    expect(schema?.postalRegex).toBe("^\\d{5}$");
+    expect(schema?.postalPlaceholder).toBe("02860");
+    expect(schema?.fields).toContain("line1");
+    expect(schema?.required).toContain("postal");
+
+    // Second call hits cache (fetcher not invoked again).
+    await loadCountrySchema("mx", { fetcher: fetcher as unknown as typeof fetch });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns undefined when the upstream response is not ok", async () => {
+    const fetcher = vi.fn(async () => ({ ok: false }) as unknown as Response);
+    const schema = await loadCountrySchema("ZZ", {
+      fetcher: fetcher as unknown as typeof fetch,
+    });
+    expect(schema).toBeUndefined();
+  });
+});
+
+describe("postal regex strengthening", () => {
+  it("US accepts ZIP+4 form", () => {
+    const us = COUNTRY_BY_CODE.get("US");
+    if (!us) throw new Error("US schema missing");
+    expect(isValidPostal(us, "94103")).toBe(true);
+    expect(isValidPostal(us, "94103-1234")).toBe(true);
+    expect(isValidPostal(us, "9410")).toBe(false);
+  });
+
+  it("CA rejects forbidden first letters (D/F/I/O/Q/U)", () => {
+    const ca = COUNTRY_BY_CODE.get("CA");
+    if (!ca) throw new Error("CA schema missing");
+    expect(isValidPostal(ca, "M5V 3L9")).toBe(true);
+    expect(isValidPostal(ca, "K1A 0B1")).toBe(true);
+    expect(isValidPostal(ca, "D1A 0B1")).toBe(false);
+    expect(isValidPostal(ca, "F1A 0B1")).toBe(false);
+  });
+
+  it("GB accepts the GIR 0AA crown depot postcode and standard formats", () => {
+    const gb = COUNTRY_BY_CODE.get("GB");
+    if (!gb) throw new Error("GB schema missing");
+    expect(isValidPostal(gb, "GIR 0AA")).toBe(true);
+    expect(isValidPostal(gb, "SW1A 1AA")).toBe(true);
+    expect(isValidPostal(gb, "M1 1AE")).toBe(true);
+    expect(isValidPostal(gb, "ZZZZ")).toBe(false);
+  });
+
+  it("DE / FR / AU honour their fixed-length numeric postcodes", () => {
+    const de = COUNTRY_BY_CODE.get("DE");
+    const fr = COUNTRY_BY_CODE.get("FR");
+    const au = COUNTRY_BY_CODE.get("AU");
+    if (!de || !fr || !au) throw new Error("schema missing");
+    expect(isValidPostal(de, "10115")).toBe(true);
+    expect(isValidPostal(de, "1011")).toBe(false);
+    expect(isValidPostal(fr, "75001")).toBe(true);
+    expect(isValidPostal(fr, "750010")).toBe(false);
+    expect(isValidPostal(au, "2000")).toBe(true);
+    expect(isValidPostal(au, "200")).toBe(false);
+  });
+
+  it("BR accepts CEP with or without dash", () => {
+    const br = COUNTRY_BY_CODE.get("BR");
+    if (!br) throw new Error("BR schema missing");
+    expect(isValidPostal(br, "01310-100")).toBe(true);
+    expect(isValidPostal(br, "01310100")).toBe(true);
+    expect(isValidPostal(br, "01310")).toBe(false);
   });
 });

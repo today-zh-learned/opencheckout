@@ -671,7 +671,9 @@ const CA_SCHEMA: CountrySchema = {
   aliases: ["Canada", "CA", "캐나다"],
   fields: ["admin1", "city", "line1", "line2", "postal"],
   required: ["admin1", "city", "line1", "postal"],
-  postalRegex: "^[A-Za-z]\\d[A-Za-z][ -]?\\d[A-Za-z]\\d$",
+  // Canada Post: D, F, I, O, Q, U excluded from first letter; W, Z excluded everywhere.
+  // Source: Canada Post Addressing Guidelines (libaddressinput zip pattern).
+  postalRegex: "^[ABCEGHJ-NPRSTVXY]\\d[ABCEGHJ-NPRSTV-Z][ \\-]?\\d[ABCEGHJ-NPRSTV-Z]\\d$",
   postalPlaceholder: "M5V 3L9",
 };
 
@@ -685,7 +687,9 @@ const GB_SCHEMA: CountrySchema = {
     admin1: { ko: "주(County)", en: "County" },
   },
   required: ["city", "line1", "postal"],
-  postalRegex: "^[A-Za-z]{1,2}\\d[A-Za-z\\d]?\\s*\\d[A-Za-z]{2}$",
+  // UK postcode (libaddressinput-derived): GIR 0AA + standard formats A9 9AA … AA9A 9AA.
+  postalRegex:
+    "^([Gg][Ii][Rr] ?0[Aa]{2}|[A-Za-z][0-9][A-Za-z0-9]? ?[0-9][A-Za-z]{2}|[A-Za-z][A-Za-z][0-9][A-Za-z0-9]? ?[0-9][A-Za-z]{2})$",
   postalPlaceholder: "SW1A 1AA",
 };
 
@@ -755,6 +759,18 @@ const ES_SCHEMA: CountrySchema = {
   postalPlaceholder: "28001",
 };
 
+const BR_SCHEMA: CountrySchema = {
+  code: "BR",
+  nameEn: "Brazil",
+  nameKo: "브라질",
+  aliases: ["Brazil", "Brasil", "BR", "브라질"],
+  fields: ["admin1", "city", "line1", "line2", "postal"],
+  required: ["admin1", "city", "line1", "postal"],
+  // Brazilian CEP: 8 digits with optional dash after the 5th (e.g. 01310-100).
+  postalRegex: "^\\d{5}-?\\d{3}$",
+  postalPlaceholder: "01310-100",
+};
+
 export const FALLBACK_COUNTRY: CountrySchema = {
   code: "ZZ",
   nameEn: "Other",
@@ -780,6 +796,7 @@ export const COUNTRIES: readonly CountrySchema[] = [
   FR_SCHEMA,
   IT_SCHEMA,
   ES_SCHEMA,
+  BR_SCHEMA,
 ];
 
 export const COUNTRY_BY_CODE: Map<string, CountrySchema> = new Map(
