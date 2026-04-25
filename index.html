@@ -776,6 +776,22 @@
       }
       .cta-snippet .cm { display: block; margin-bottom: 6px; }
 
+      /* ---------- Per-block copy buttons ---------- */
+      .code-block { position: relative; }
+      .code-copy-btn {
+        position: absolute; top: 8px; right: 8px;
+        padding: 3px 9px;
+        border: 1px solid rgba(255,255,255,0.12); border-radius: 5px;
+        background: rgba(30,30,32,0.82);
+        color: #a1a1aa;
+        font-family: var(--font-mono); font-size: 11px;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity var(--t-fast) var(--ease-snap), color var(--t-fast) var(--ease-snap);
+      }
+      .code-block:hover .code-copy-btn { opacity: 1; }
+      .code-copy-btn.copied { color: #6ee7b7; }
+
       /* ---------- FOOTER ---------- */
       footer.site {
         padding: 32px 0;
@@ -1074,32 +1090,32 @@
             <div class="step">
               <h3>SDK 로드</h3>
               <p>CDN에서 ES 모듈로 가져옵니다. 번들러도 npm도 선택 가능합니다.</p>
-              <code>import { OpenCheckout }
+              <div class="code-block" data-copy="step-sdk"><code>import { OpenCheckout }
 from "https://cdn.opencheckout
-.dev/v1";</code>
+.dev/v1";</code><button class="code-copy-btn" aria-label="Copy code">Copy</button></div>
             </div>
             <div class="step">
               <h3>세션 생성</h3>
               <p>publishableKey와 customerKey로 widgets 인스턴스를 만듭니다.</p>
-              <code>const oc = await OpenCheckout
+              <div class="code-block" data-copy="step-session"><code>const oc = await OpenCheckout
   .load({ publishableKey });
 const widgets = oc.widgets({
-  customerKey, locale });</code>
+  customerKey, locale });</code><button class="code-copy-btn" aria-label="Copy code">Copy</button></div>
             </div>
             <div class="step">
               <h3>네 개 마운트</h3>
               <p>setAmount + setOrder 후, 네 위젯을 각자 selector에 마운트.</p>
-              <code>widgets.renderAddress({…});
+              <div class="code-block" data-copy="step-mount"><code>widgets.renderAddress({…});
 widgets.renderShipping({…});
 widgets.renderPayment({…});
-widgets.renderAgreement({…});</code>
+widgets.renderAgreement({…});</code><button class="code-copy-btn" aria-label="Copy code">Copy</button></div>
             </div>
             <div class="step">
               <h3>결제 요청</h3>
               <p>버튼 한 번으로 successUrl·failUrl로 리다이렉트합니다.</p>
-              <code>widgets.requestPayment({
+              <div class="code-block" data-copy="step-pay"><code>widgets.requestPayment({
   successUrl, failUrl,
-});</code>
+});</code><button class="code-copy-btn" aria-label="Copy code">Copy</button></div>
             </div>
           </div>
         </section>
@@ -1203,10 +1219,11 @@ widgets.renderAgreement({…});</code>
                 </a>
               </div>
             </div>
-            <div class="cta-snippet" aria-label="npm install snippet">
+            <div class="cta-snippet code-block" aria-label="npm install snippet" data-copy="cta-npm">
               <span class="cm"># or via npm</span>
               <span><span class="kw">npm</span> install <span class="str">@opencheckout/widget</span></span><br />
               <span class="cm"># peer-dep: preact ≥ 10</span>
+              <button class="code-copy-btn" aria-label="Copy code">Copy</button>
             </div>
           </div>
         </section>
@@ -1275,6 +1292,24 @@ widgets.renderAgreement({…});</code>
       );
       for (const s of sections) obs.observe(s);
 
+      // ---------- Per-block copy delegation ----------
+      document.addEventListener("click", async (ev) => {
+        const btn = ev.target.closest(".code-copy-btn");
+        if (!btn) return;
+        const block = btn.closest("[data-copy]");
+        if (!block) return;
+        const codeEl = block.querySelector("code");
+        const text = codeEl ? codeEl.textContent : block.textContent.replace(/Copy$/, "").trim();
+        try {
+          await navigator.clipboard.writeText(text || "");
+          btn.textContent = "Copied";
+          btn.classList.add("copied");
+        } catch {
+          btn.textContent = "Failed";
+        }
+        setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1200);
+      });
+
       // Hero code: render with line numbers + tokenization
       const heroSrc = [
         '<div id="oc-address"></div>',
@@ -1284,9 +1319,9 @@ widgets.renderAgreement({…});</code>
         '<button id="pay">결제하기</button>',
         '',
         '<script type="module">',
-        '  import { OpenCheckout } from "https://cdn.opencheckout.dev/v1";',
+        '  import { OpenCheckout } from "https://today-zh-learned.github.io/opencheckout/assets/opencheckout-widget.js";',
         '',
-        '  const oc = await OpenCheckout.load({ publishableKey: "pk_test_sandbox_demo001" });',
+        '  const oc = await OpenCheckout.load({ publishableKey: "pk_test_demokey_DEMOnotProd123" });',
         '  const widgets = oc.widgets({ customerKey: "ANONYMOUS", locale: "ko" });',
         '',
         '  widgets.setAmount({ value: 49900, currency: "KRW" });',
