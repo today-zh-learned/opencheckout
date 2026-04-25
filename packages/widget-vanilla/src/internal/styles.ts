@@ -1,23 +1,45 @@
 export const WIDGET_CSS = `
   :host {
+    /* OpenCheckout theme tokens — override on host to retheme */
+    --oc-color-bg: #fffaf0;
+    --oc-color-bg-soft: #f6f1e4;
+    --oc-color-surface: #e8f0eb;
+    --oc-color-surface-soft: #fff;
+    --oc-color-ink: #262319;
+    --oc-color-ink-soft: #4d4a3b;
+    --oc-color-muted: #7b4e10;
+    --oc-color-quiet: #6a5a2c;
+    --oc-color-line: rgba(87, 79, 52, 0.18);
+    --oc-color-line-strong: #d6d3c7;
+    --oc-color-accent: #d38b27;
+    --oc-color-accent-strong: #1f4d3a;
+    --oc-color-danger: #b3261e;
+    --oc-radius-xs: 8px;
+    --oc-radius-sm: 10px;
+    --oc-radius-md: 12px;
+    --oc-radius-lg: 18px;
+    --oc-font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --oc-shadow-sm: 0 12px 28px rgba(45, 40, 25, 0.16);
+    --oc-shadow-md: 0 20px 50px rgba(45, 40, 25, 0.14);
+
     color-scheme: light;
     display: block;
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: var(--oc-font-ui);
   }
 
   .oc-shell {
-    border: 1px solid #d6d3c7;
-    border-radius: 18px;
-    background: linear-gradient(135deg, #fffaf0 0%, #f6f1e4 52%, #e8f0eb 100%);
-    box-shadow: 0 20px 50px rgba(45, 40, 25, 0.14);
-    color: #262319;
+    border: 1px solid var(--oc-color-line-strong);
+    border-radius: var(--oc-radius-lg);
+    background: linear-gradient(135deg, var(--oc-color-bg) 0%, var(--oc-color-bg-soft) 52%, var(--oc-color-surface) 100%);
+    box-shadow: var(--oc-shadow-md));
+    color: var(--oc-color-ink);
     max-width: 460px;
     overflow: hidden;
     padding: 18px;
   }
 
   .oc-eyebrow {
-    color: #7b4e10;
+    color: var(--oc-color-muted);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.12em;
@@ -44,9 +66,9 @@ export const WIDGET_CSS = `
   }
 
   .oc-input {
-    background: #fff;
+    background: var(--oc-color-surface-soft);
     border: 1px solid rgba(87, 79, 52, 0.26);
-    border-radius: 10px;
+    border-radius: var(--oc-radius-sm);
     font: inherit;
     padding: 9px 12px;
     width: 100%;
@@ -54,7 +76,7 @@ export const WIDGET_CSS = `
   }
 
   .oc-input:focus-visible {
-    outline: 3px solid #d38b27;
+    outline: 3px solid var(--oc-color-accent);
     outline-offset: 1px;
   }
 
@@ -67,8 +89,8 @@ export const WIDGET_CSS = `
   .oc-radio {
     align-items: center;
     background: rgba(255, 255, 255, 0.56);
-    border: 1px solid rgba(87, 79, 52, 0.18);
-    border-radius: 12px;
+    border: 1px solid var(--oc-color-line));
+    border-radius: var(--oc-radius-md);
     cursor: pointer;
     display: flex;
     gap: 10px;
@@ -76,7 +98,7 @@ export const WIDGET_CSS = `
   }
 
   .oc-radio[data-selected="true"] {
-    border-color: #1f4d3a;
+    border-color: var(--oc-color-accent-strong);
     background: rgba(31, 77, 58, 0.08);
   }
 
@@ -90,7 +112,7 @@ export const WIDGET_CSS = `
   }
 
   .oc-radio-hint {
-    color: #4d4a3b;
+    color: var(--oc-color-ink-soft);
     font-size: 12px;
     opacity: 0.75;
   }
@@ -103,7 +125,7 @@ export const WIDGET_CSS = `
 
   .oc-amount {
     background: rgba(31, 77, 58, 0.07);
-    border-radius: 12px;
+    border-radius: var(--oc-radius-md);
     font-size: 13px;
     margin: 0 0 12px;
     padding: 10px 12px;
@@ -133,17 +155,17 @@ export const WIDGET_CSS = `
   }
 
   .oc-select {
-    background: #fff;
+    background: var(--oc-color-surface-soft);
     border: 1px solid rgba(87, 79, 52, 0.26);
-    border-radius: 10px;
+    border-radius: var(--oc-radius-sm);
     font: inherit;
     padding: 9px 12px;
     width: 100%;
     box-sizing: border-box;
     appearance: none;
     -webkit-appearance: none;
-    background-image: linear-gradient(45deg, transparent 50%, #6a5a2c 50%),
-      linear-gradient(135deg, #6a5a2c 50%, transparent 50%);
+    background-image: linear-gradient(45deg, transparent 50%, var(--oc-color-quiet) 50%),
+      linear-gradient(135deg, var(--oc-color-quiet) 50%, transparent 50%);
     background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
     background-size: 5px 5px, 5px 5px;
     background-repeat: no-repeat;
@@ -151,7 +173,7 @@ export const WIDGET_CSS = `
   }
 
   .oc-select:focus-visible {
-    outline: 3px solid #d38b27;
+    outline: 3px solid var(--oc-color-accent);
     outline-offset: 1px;
   }
 
@@ -164,10 +186,10 @@ export const WIDGET_CSS = `
     top: calc(100% + 4px);
     left: 0;
     right: 0;
-    background: #fff;
+    background: var(--oc-color-surface-soft);
     border: 1px solid rgba(87, 79, 52, 0.26);
-    border-radius: 10px;
-    box-shadow: 0 12px 28px rgba(45, 40, 25, 0.16);
+    border-radius: var(--oc-radius-sm);
+    box-shadow: var(--oc-shadow-sm));
     list-style: none;
     margin: 0;
     padding: 4px 0;
@@ -189,19 +211,19 @@ export const WIDGET_CSS = `
   }
 
   .oc-combo-item-sub {
-    color: #6a5a2c;
+    color: var(--oc-color-quiet);
     font-size: 11px;
     margin-left: 6px;
   }
 
   .oc-input.oc-invalid,
   .oc-select.oc-invalid {
-    border-color: #b3261e;
-    outline-color: #b3261e;
+    border-color: var(--oc-color-danger);
+    outline-color: var(--oc-color-danger);
   }
 
   .oc-error-hint {
-    color: #b3261e;
+    color: var(--oc-color-danger);
     font-size: 11px;
     margin: 4px 0 0;
   }
@@ -216,9 +238,9 @@ export const WIDGET_CSS = `
   }
 
   .oc-pm-amount-chip {
-    background: #1f4d3a;
+    background: var(--oc-color-accent-strong);
     border-radius: 999px;
-    color: #fffaf0;
+    color: var(--oc-color-bg);
     font-size: 13px;
     font-weight: 600;
     letter-spacing: 0.02em;
@@ -234,9 +256,9 @@ export const WIDGET_CSS = `
   .oc-pm-tile {
     align-items: center;
     background: rgba(255, 255, 255, 0.62);
-    border: 1px solid rgba(87, 79, 52, 0.18);
-    border-radius: 12px;
-    color: #262319;
+    border: 1px solid var(--oc-color-line));
+    border-radius: var(--oc-radius-md);
+    color: var(--oc-color-ink);
     cursor: pointer;
     display: flex;
     gap: 12px;
@@ -250,14 +272,14 @@ export const WIDGET_CSS = `
   }
 
   .oc-pm-tile:focus-visible {
-    outline: 3px solid #d38b27;
+    outline: 3px solid var(--oc-color-accent);
     outline-offset: 2px;
   }
 
   .oc-pm-tile[data-selected="true"] {
     background: rgba(31, 77, 58, 0.10);
-    border-color: #1f4d3a;
-    box-shadow: inset 0 0 0 1px #1f4d3a;
+    border-color: var(--oc-color-accent-strong);
+    box-shadow: inset 0 0 0 1px var(--oc-color-accent-strong);
   }
 
   .oc-pm-tile-radio {
@@ -273,7 +295,7 @@ export const WIDGET_CSS = `
 
   .oc-pm-icon {
     align-items: center;
-    color: #1f4d3a;
+    color: var(--oc-color-accent-strong);
     display: inline-flex;
     flex: 0 0 auto;
     height: 20px;
@@ -294,7 +316,7 @@ export const WIDGET_CSS = `
   }
 
   .oc-pm-tile[data-selected="true"] .oc-pm-chevron {
-    color: #1f4d3a;
+    color: var(--oc-color-accent-strong);
     transform: rotate(90deg);
   }
 
@@ -312,7 +334,7 @@ export const WIDGET_CSS = `
   .oc-pm-detail-inner {
     background: rgba(255, 255, 255, 0.55);
     border: 1px solid rgba(87, 79, 52, 0.16);
-    border-radius: 12px;
+    border-radius: var(--oc-radius-md);
     margin-top: 8px;
     min-height: 0;
     padding: 12px;
@@ -334,9 +356,9 @@ export const WIDGET_CSS = `
   }
 
   .oc-installment-cell {
-    background: #fff;
+    background: var(--oc-color-surface-soft);
     border: 1px solid rgba(87, 79, 52, 0.22);
-    border-radius: 8px;
+    border-radius: var(--oc-radius-xs);
     cursor: pointer;
     font-size: 12px;
     padding: 8px 4px;
@@ -345,24 +367,24 @@ export const WIDGET_CSS = `
   }
 
   .oc-installment-cell:hover {
-    border-color: #1f4d3a;
+    border-color: var(--oc-color-accent-strong);
   }
 
   .oc-installment-cell:focus-visible {
-    outline: 2px solid #d38b27;
+    outline: 2px solid var(--oc-color-accent);
     outline-offset: 1px;
   }
 
   .oc-installment-cell[data-selected="true"] {
-    background: #1f4d3a;
-    border-color: #1f4d3a;
-    color: #fffaf0;
+    background: var(--oc-color-accent-strong);
+    border-color: var(--oc-color-accent-strong);
+    color: var(--oc-color-bg);
   }
 
   .oc-bank-select {
-    background: #fff;
+    background: var(--oc-color-surface-soft);
     border: 1px solid rgba(87, 79, 52, 0.26);
-    border-radius: 10px;
+    border-radius: var(--oc-radius-sm);
     font: inherit;
     padding: 9px 12px;
     width: 100%;
@@ -370,12 +392,12 @@ export const WIDGET_CSS = `
   }
 
   .oc-bank-select:focus-visible {
-    outline: 3px solid #d38b27;
+    outline: 3px solid var(--oc-color-accent);
     outline-offset: 1px;
   }
 
   .oc-pm-note {
-    color: #4d4a3b;
+    color: var(--oc-color-ink-soft);
     font-size: 12px;
     line-height: 1.4;
     margin: 0;
@@ -388,7 +410,7 @@ export const WIDGET_CSS = `
   }
 
   .oc-easy-pay-chip {
-    background: #fff;
+    background: var(--oc-color-surface-soft);
     border: 1px solid rgba(87, 79, 52, 0.22);
     border-radius: 999px;
     cursor: pointer;
@@ -398,18 +420,18 @@ export const WIDGET_CSS = `
   }
 
   .oc-easy-pay-chip:hover {
-    border-color: #1f4d3a;
+    border-color: var(--oc-color-accent-strong);
   }
 
   .oc-easy-pay-chip:focus-visible {
-    outline: 2px solid #d38b27;
+    outline: 2px solid var(--oc-color-accent);
     outline-offset: 1px;
   }
 
   .oc-easy-pay-chip[data-selected="true"] {
-    background: #1f4d3a;
-    border-color: #1f4d3a;
-    color: #fffaf0;
+    background: var(--oc-color-accent-strong);
+    border-color: var(--oc-color-accent-strong);
+    color: var(--oc-color-bg);
   }
 
   .oc-pm-skeleton {
@@ -420,7 +442,7 @@ export const WIDGET_CSS = `
       rgba(214, 211, 199, 0.35) 100%
     );
     background-size: 200% 100%;
-    border-radius: 12px;
+    border-radius: var(--oc-radius-md);
     height: 56px;
     animation: oc-pm-shimmer 1200ms linear infinite;
   }

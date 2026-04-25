@@ -304,7 +304,7 @@ export function mountPaymentWidget(
     return null;
   };
 
-  const renderTile = (descriptor: PaymentMethodDescriptor) => {
+  const renderTile = (descriptor: PaymentMethodDescriptor, visibleList: readonly PaymentMethodDescriptor[]) => {
     const isSelected = selected === descriptor.code;
     const labelText = state.locale === "en" ? descriptor.labelEn : descriptor.labelKo;
     const detail = isSelected ? renderDetailFor(descriptor.code) : null;
@@ -316,16 +316,45 @@ export function mountPaymentWidget(
         {
           class: "oc-pm-tile",
           role: "radio",
-          tabindex: "0",
+          tabindex: isSelected ? "0" : "-1",
           "aria-checked": isSelected ? "true" : "false",
           "data-selected": isSelected ? "true" : "false",
           "data-method": descriptor.code,
           key: `tile-${descriptor.code}`,
           onClick: () => select(descriptor.code),
           onKeyDown: (ev: KeyboardEvent) => {
+            // Space/Enter on an already-selected tile: no-op (selection follows focus).
             if (ev.key === " " || ev.key === "Enter") {
               ev.preventDefault();
-              select(descriptor.code);
+              return;
+            }
+            // Roving tabindex arrow navigation handled on the radiogroup container.
+            // Forward navigation keys to the container handler so focus + selection move.
+            const isNavKey = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"].includes(ev.key);
+            if (isNavKey) {
+              ev.preventDefault();
+              const currentIdx = visibleList.findIndex((d) => d.code === descriptor.code);
+              let nextIdx = currentIdx;
+              if (ev.key === "ArrowRight" || ev.key === "ArrowDown") {
+                nextIdx = (currentIdx + 1) % visibleList.length;
+              } else if (ev.key === "ArrowLeft" || ev.key === "ArrowUp") {
+                nextIdx = (currentIdx - 1 + visibleList.length) % visibleList.length;
+              } else if (ev.key === "Home") {
+                nextIdx = 0;
+              } else if (ev.key === "End") {
+                nextIdx = visibleList.length - 1;
+              }
+              const nextCode = visibleList[nextIdx]?.code;
+              if (nextCode) {
+                // Capture root reference before select() triggers re-render (currentTarget nulls out async).
+                const tileRoot = (ev.currentTarget as HTMLElement).getRootNode() as ShadowRoot | Document;
+                select(nextCode);
+                // Move focus to the newly selected tile after re-render.
+                requestAnimationFrame(() => {
+                  const nextTile = tileRoot.querySelector(`[data-method="${nextCode}"]`) as HTMLElement | null;
+                  nextTile?.focus();
+                });
+              }
             }
           },
         },
@@ -408,7 +437,7 @@ export function mountPaymentWidget(
       h(
         "div",
         { class: "oc-pm-tiles", role: "radiogroup", "aria-label": labels.title },
-        visible.map((d) => renderTile(d)),
+        visible.map((d) => renderTile(d, visible)),
       ),
     );
   };

@@ -6,7 +6,7 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: false,
-  minify: false,
+  minify: true,
   treeshake: true,
   external: ["preact"],
   noExternal: ["es-hangul"],

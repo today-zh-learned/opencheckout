@@ -10,7 +10,11 @@ import {
   validateRedirectUrl,
 } from "./internal/validate.js";
 import { type AddressWidget, mountAddressWidget } from "./widgets/address-widget.js";
-import { type AgreementWidget, mountAgreementWidget } from "./widgets/agreement-widget.js";
+import {
+  type AgreementClause,
+  type AgreementWidget,
+  mountAgreementWidget,
+} from "./widgets/agreement-widget.js";
 import { type PaymentWidget, mountPaymentWidget } from "./widgets/payment-widget.js";
 import { type ShippingWidget, mountShippingWidget } from "./widgets/shipping-widget.js";
 
@@ -38,6 +42,27 @@ export type RenderPaymentOptions = {
 
 export type RenderAgreementOptions = {
   readonly selector: string;
+  /**
+   * Optional list of clauses to render.
+   * - Each clause has a stable `id`, merchant-supplied `label`, `required` flag,
+   *   and an optional `href` for a "보기 ↗" link.
+   * - If omitted, a single structural fallback row is rendered (backwards-compatible).
+   * - The widget renders only what the merchant supplies — no engineering-authored
+   *   legal copy is injected as defaults.
+   *
+   * @example
+   * ```ts
+   * widgets.renderAgreement({
+   *   selector: "#agreement",
+   *   clauses: [
+   *     { id: "tos",     label: "서비스 이용약관",   required: true,  href: "https://example.com/tos" },
+   *     { id: "privacy", label: "개인정보 처리방침", required: true,  href: "https://example.com/privacy" },
+   *     { id: "promo",   label: "마케팅 정보 수신",  required: false },
+   *   ],
+   * });
+   * ```
+   */
+  readonly clauses?: ReadonlyArray<AgreementClause>;
 };
 
 export type RequestPaymentOptions = {
@@ -141,7 +166,9 @@ export function createWidgets(init: {
     renderAgreement(p: RenderAgreementOptions): AgreementWidget {
       requireAmount("renderAgreement");
       assertInputSafe(p);
-      const w = mountAgreementWidget(p.selector, state);
+      const w = mountAgreementWidget(p.selector, state, {
+        ...(p.clauses !== undefined ? { clauses: p.clauses } : {}),
+      });
       mounted.push(w);
       return w;
     },

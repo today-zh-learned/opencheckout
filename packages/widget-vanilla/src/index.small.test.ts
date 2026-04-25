@@ -19,6 +19,7 @@ import {
   load,
   loadCountrySchema,
   searchCountries,
+  type AgreementClause,
 } from "./index.js";
 import { _clearCountrySchemaCache } from "./internal/address-lazy.js";
 
@@ -998,5 +999,461 @@ describe("postal regex strengthening", () => {
     expect(isValidPostal(br, "01310-100")).toBe(true);
     expect(isValidPostal(br, "01310100")).toBe(true);
     expect(isValidPostal(br, "01310")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WCAG helpers reused across accessibility tests
+// ---------------------------------------------------------------------------
+function addressHost(id: string): HTMLElement {
+  const target = document.getElementById(id);
+  if (!target?.firstElementChild) throw new Error(`address widget host missing: ${id}`);
+  return target.firstElementChild as HTMLElement;
+}
+
+describe("Payment widget WCAG — roving tabindex (UX P1.3)", () => {
+  async function mountKrPayment(id: string) {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS", locale: "ko" });
+    widgets.setAmount({ value: 49900, currency: "KRW" });
+    widgets.setOrder({ id: "wcag-pay-1", name: "Test", buyerCountry: "KR" });
+    makeTarget(id);
+    widgets.renderPayment({ selector: `#${id}` });
+    const host = paymentHost(id);
+    await waitForTiles(host);
+    return host;
+  }
+
+  it("exactly one tile has tabindex='0', all others have tabindex='-1'", async () => {
+    const host = await mountKrPayment("wcag-p1");
+    const tiles = Array.from(host.shadowRoot!.querySelectorAll("[data-method]") as NodeListOf<HTMLElement>);
+    expect(tiles.length).toBeGreaterThan(1);
+    const focusable = tiles.filter((t) => t.getAttribute("tabindex") === "0");
+    const unfocusable = tiles.filter((t) => t.getAttribute("tabindex") === "-1");
+    expect(focusable).toHaveLength(1);
+    expect(unfocusable).toHaveLength(tiles.length - 1);
+  });
+
+  it("container has role='radiogroup'", async () => {
+    const host = await mountKrPayment("wcag-p2");
+    const group = host.shadowRoot!.querySelector(".oc-pm-tiles");
+    expect(group?.getAttribute("role")).toBe("radiogroup");
+  });
+
+  it("each tile has role='radio' and aria-checked reflects selection", async () => {
+    const host = await mountKrPayment("wcag-p3");
+    const tiles = Array.from(host.shadowRoot!.querySelectorAll("[data-method]") as NodeListOf<HTMLElement>);
+    for (const tile of tiles) {
+      expect(tile.getAttribute("role")).toBe("radio");
+      expect(["true", "false"]).toContain(tile.getAttribute("aria-checked"));
+    }
+    const checked = tiles.filter((t) => t.getAttribute("aria-checked") === "true");
+    expect(checked).toHaveLength(1);
+  });
+
+  it("ArrowRight moves selection and focus to the next tile", async () => {
+    const host = await mountKrPayment("wcag-p4");
+    const tiles = Array.from(host.shadowRoot!.querySelectorAll("[data-method]") as NodeListOf<HTMLElement>);
+    // Find currently selected tile (card, index 0).
+    const firstTile = tiles.find((t) => t.getAttribute("aria-checked") === "true");
+    expect(firstTile).toBeTruthy();
+    const firstCode = firstTile!.getAttribute("data-method")!;
+    const firstIdx = tiles.findIndex((t) => t.getAttribute("data-method") === firstCode);
+    const expectedNextCode = tiles[(firstIdx + 1) % tiles.length]!.getAttribute("data-method")!;
+
+    firstTile!.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+
+    // Wait for re-render.
+    await new Promise((r) => setTimeout(r, 50));
+    const updatedTiles = Array.from(host.shadowRoot!.querySelectorAll("[data-method]") as NodeListOf<HTMLElement>);
+    const nextTile = updatedTiles.find((t) => t.getAttribute("data-method") === expectedNextCode);
+    expect(nextTile?.getAttribute("aria-checked")).toBe("true");
+    expect(nextTile?.getAttribute("tabindex")).toBe("0");
+  });
+
+  it("End key selects the last tile", async () => {
+    const host = await mountKrPayment("wcag-p5");
+    const tiles = Array.from(host.shadowRoot!.querySelectorAll("[data-method]") as NodeListOf<HTMLElement>);
+    const firstTile = tiles.find((t) => t.getAttribute("aria-checked") === "true")!;
+    firstTile.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true }));
+
+    await new Promise((r) => setTimeout(r, 50));
+    const updatedTiles = Array.from(host.shadowRoot!.querySelectorAll("[data-method]") as NodeListOf<HTMLElement>);
+    const lastTile = updatedTiles[updatedTiles.length - 1];
+    expect(lastTile?.getAttribute("aria-checked")).toBe("true");
+    expect(lastTile?.getAttribute("tabindex")).toBe("0");
+  });
+
+  it("Home key selects the first tile", async () => {
+    const host = await mountKrPayment("wcag-p6");
+    const tiles = Array.from(host.shadowRoot!.querySelectorAll("[data-method]") as NodeListOf<HTMLElement>);
+    // First select the last tile, then press Home.
+    const lastTile = tiles[tiles.length - 1]!;
+    lastTile.click();
+    await new Promise((r) => setTimeout(r, 50));
+
+    const updatedTiles = Array.from(host.shadowRoot!.querySelectorAll("[data-method]") as NodeListOf<HTMLElement>);
+    const selectedTile = updatedTiles.find((t) => t.getAttribute("aria-checked") === "true")!;
+    selectedTile.dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true }));
+
+    await new Promise((r) => setTimeout(r, 50));
+    const finalTiles = Array.from(host.shadowRoot!.querySelectorAll("[data-method]") as NodeListOf<HTMLElement>);
+    const firstTile = finalTiles[0];
+    expect(firstTile?.getAttribute("aria-checked")).toBe("true");
+    expect(firstTile?.getAttribute("tabindex")).toBe("0");
+  });
+});
+
+describe("Address widget WCAG — combobox aria-activedescendant (UX P1.4)", () => {
+  async function mountAddressAndOpenCombo(id: string) {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS", locale: "en" });
+    widgets.setAmount({ value: 1000, currency: "KRW" });
+    widgets.setOrder({ id: "wcag-addr-1", name: "Test", buyerCountry: "KR" });
+    makeTarget(id);
+    widgets.renderAddress({ selector: `#${id}` });
+    const host = addressHost(id);
+    const input = host.shadowRoot!.querySelector('[role="combobox"]') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    // Open the listbox by focusing.
+    input.dispatchEvent(new Event("focus", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 20));
+    return { host, input };
+  }
+
+  it("input has aria-activedescendant pointing at first option id when listbox opens", async () => {
+    const { host, input } = await mountAddressAndOpenCombo("wcag-a1");
+    const firstOption = host.shadowRoot!.querySelector('[role="option"]') as HTMLElement | null;
+    expect(firstOption).toBeTruthy();
+    expect(firstOption!.id).toBeTruthy();
+    expect(input.getAttribute("aria-activedescendant")).toBe(firstOption!.id);
+  });
+
+  it("ArrowDown updates aria-activedescendant to the next option id", async () => {
+    const { host, input } = await mountAddressAndOpenCombo("wcag-a2");
+    const optionsBefore = Array.from(host.shadowRoot!.querySelectorAll('[role="option"]') as NodeListOf<HTMLElement>);
+    expect(optionsBefore.length).toBeGreaterThan(1);
+    const firstId = optionsBefore[0]!.id;
+    expect(input.getAttribute("aria-activedescendant")).toBe(firstId);
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+    await new Promise((r) => setTimeout(r, 20));
+
+    const optionsAfter = Array.from(host.shadowRoot!.querySelectorAll('[role="option"]') as NodeListOf<HTMLElement>);
+    const secondId = optionsAfter[1]!.id;
+    expect(input.getAttribute("aria-activedescendant")).toBe(secondId);
+  });
+
+  it("Escape closes listbox and aria-activedescendant becomes empty", async () => {
+    const { input } = await mountAddressAndOpenCombo("wcag-a3");
+    expect(input.getAttribute("aria-expanded")).toBe("true");
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(input.getAttribute("aria-expanded")).toBe("false");
+    expect(input.getAttribute("aria-activedescendant") ?? "").toBe("");
+  });
+});
+
+describe("Theme tokens (D3)", () => {
+  it("shadow DOM style element contains --oc-color- tokens", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS" });
+    widgets.setAmount({ value: 1000, currency: "KRW" });
+
+    makeTarget("d3-ag");
+    widgets.renderAgreement({ selector: "#d3-ag" });
+
+    const host = document.getElementById("d3-ag")?.firstElementChild as HTMLElement;
+    expect(host?.shadowRoot).toBeTruthy();
+
+    const styleEl = host.shadowRoot?.querySelector("style");
+    expect(styleEl).toBeTruthy();
+    expect(styleEl!.textContent).toContain("--oc-color-");
+  });
+
+  it("CSS contains var(--oc-color-accent) for focus/accent rules", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS" });
+    widgets.setAmount({ value: 1000, currency: "KRW" });
+
+    makeTarget("d3-ag2");
+    widgets.renderAgreement({ selector: "#d3-ag2" });
+
+    const host = document.getElementById("d3-ag2")?.firstElementChild as HTMLElement;
+    const styleEl = host?.shadowRoot?.querySelector("style");
+    expect(styleEl!.textContent).toContain("var(--oc-color-accent");
+  });
+
+  it("smoke: all 4 widgets mount without throwing", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS" });
+    widgets.setAmount({ value: 1000, currency: "KRW" });
+    widgets.setOrder({ id: "d3-order", name: "Smoke Test" });
+
+    makeTarget("d3-addr");
+    makeTarget("d3-ship");
+    makeTarget("d3-pay");
+    makeTarget("d3-agr");
+
+    expect(() => widgets.renderAddress({ selector: "#d3-addr" })).not.toThrow();
+    expect(() => widgets.renderShipping({ selector: "#d3-ship" })).not.toThrow();
+    expect(() => widgets.renderPayment({ selector: "#d3-pay" })).not.toThrow();
+    expect(() => widgets.renderAgreement({ selector: "#d3-agr" })).not.toThrow();
+
+    for (const id of ["d3-addr", "d3-ship", "d3-pay", "d3-agr"]) {
+      const host = document.getElementById(id)?.firstElementChild as HTMLElement;
+      expect(host?.shadowRoot).toBeTruthy();
+    }
+  });
+
+  it("bundle sanity: WIDGET_CSS length within 1.5x of original 8642 chars", async () => {
+    // Original WIDGET_CSS (pre-token refactor) was 8642 chars.
+    // Token layer adds ~1200 chars + var() wrappers; 1.5x ceiling = 12963.
+    const { WIDGET_CSS } = await import("./internal/styles.js");
+    const originalLen = 8642;
+    expect(WIDGET_CSS.length).toBeLessThan(originalLen * 1.5);
+    expect(WIDGET_CSS.length).toBeGreaterThan(originalLen * 0.9);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Agreement widget — multi-clause structural shell (D5)
+// ---------------------------------------------------------------------------
+
+/** Resolve the oc-agreement shadow host for a given container id. */
+function agreementHost(id: string): HTMLElement {
+  const target = document.getElementById(id);
+  if (!target?.firstElementChild) throw new Error(`agreement widget host missing: ${id}`);
+  return target.firstElementChild as HTMLElement;
+}
+
+async function makeAgreementWidgets() {
+  const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+  const widgets = oc.widgets({ customerKey: "ANONYMOUS" });
+  widgets.setAmount({ value: 1000, currency: "KRW" });
+  widgets.setOrder({ id: "d5-order", name: "Test" });
+  return widgets;
+}
+
+describe("Agreement widget — multi-clause structural shell (D5)", () => {
+  // 1. No clauses passed → single checkbox with default label.
+  it("no clauses → renders single checkbox with default label '전체 약관에 동의합니다'", async () => {
+    const widgets = await makeAgreementWidgets();
+    makeTarget("d5-1");
+    widgets.renderAgreement({ selector: "#d5-1" });
+    const host = agreementHost("d5-1");
+    const checkbox = host.shadowRoot?.querySelector("input[type=checkbox]") as HTMLInputElement;
+    expect(checkbox).toBeTruthy();
+    // Single-clause path: no master row, label text contains default copy.
+    const labelText = host.shadowRoot?.querySelector("label.oc-check")?.textContent ?? "";
+    expect(labelText).toContain("전체 약관에 동의합니다");
+    // No per-clause required badge in single mode.
+    expect(host.shadowRoot?.querySelector(".oc-clause-required")).toBeNull();
+  });
+
+  // 2. Pass 3 clauses (2 required, 1 optional) → renders 3 rows + master row.
+  it("3 clauses → renders master row + 3 clause rows", async () => {
+    const widgets = await makeAgreementWidgets();
+    makeTarget("d5-2");
+    const clauses: AgreementClause[] = [
+      { id: "tos",     label: "서비스 이용약관",   required: true },
+      { id: "privacy", label: "개인정보 처리방침", required: true },
+      { id: "promo",   label: "마케팅 정보 수신",  required: false },
+    ];
+    widgets.renderAgreement({ selector: "#d5-2", clauses });
+    const host = agreementHost("d5-2");
+    const sr = host.shadowRoot!;
+    // Master row + 3 clause rows = 4 label.oc-check elements.
+    const checkLabels = sr.querySelectorAll("label.oc-check");
+    expect(checkLabels.length).toBe(4);
+    // Master row is first.
+    expect(checkLabels[0]?.textContent).toContain("전체 동의");
+    // Clause rows follow.
+    expect(checkLabels[1]?.textContent).toContain("서비스 이용약관");
+    expect(checkLabels[2]?.textContent).toContain("개인정보 처리방침");
+    expect(checkLabels[3]?.textContent).toContain("마케팅 정보 수신");
+  });
+
+  // 3. Master toggles all children when clicked.
+  it("master checkbox toggles all child checkboxes", async () => {
+    const widgets = await makeAgreementWidgets();
+    makeTarget("d5-3");
+    const clauses: AgreementClause[] = [
+      { id: "c1", label: "Clause 1", required: true },
+      { id: "c2", label: "Clause 2", required: false },
+    ];
+    widgets.renderAgreement({ selector: "#d5-3", clauses });
+    const host = agreementHost("d5-3");
+    const sr = host.shadowRoot!;
+
+    const inputs = Array.from(sr.querySelectorAll("input[type=checkbox]")) as HTMLInputElement[];
+    // inputs[0] = master, inputs[1..] = clauses
+    expect(inputs.length).toBe(3);
+
+    // Click master to check all.
+    inputs[0]!.checked = true;
+    inputs[0]!.dispatchEvent(new Event("change", { bubbles: true }));
+
+    // After toggle, all clause checkboxes should be checked.
+    const updatedInputs = Array.from(
+      host.shadowRoot!.querySelectorAll("input[type=checkbox]"),
+    ) as HTMLInputElement[];
+    expect(updatedInputs[1]!.checked).toBe(true);
+    expect(updatedInputs[2]!.checked).toBe(true);
+  });
+
+  // 4. Master shows aria-checked="mixed" when child states are partial.
+  it("master shows aria-checked='mixed' when some but not all clauses are checked", async () => {
+    const widgets = await makeAgreementWidgets();
+    makeTarget("d5-4");
+    const clauses: AgreementClause[] = [
+      { id: "c1", label: "Clause 1", required: true },
+      { id: "c2", label: "Clause 2", required: true },
+    ];
+    widgets.renderAgreement({ selector: "#d5-4", clauses });
+    const host = agreementHost("d5-4");
+    const sr = host.shadowRoot!;
+
+    const inputs = Array.from(sr.querySelectorAll("input[type=checkbox]")) as HTMLInputElement[];
+    // Check only the second clause checkbox (index 2, which is clause c2).
+    inputs[2]!.checked = true;
+    inputs[2]!.dispatchEvent(new Event("change", { bubbles: true }));
+
+    // Re-query after rerender.
+    const masterInput = host.shadowRoot!.querySelector(
+      "label.oc-check--master input",
+    ) as HTMLInputElement;
+    expect(masterInput.getAttribute("aria-checked")).toBe("mixed");
+  });
+
+  // 5. Overall agreed event fires true only when all required clauses are checked.
+  it("overall agreed fires true only when all required clauses are checked", async () => {
+    const widgets = await makeAgreementWidgets();
+    makeTarget("d5-5");
+    const clauses: AgreementClause[] = [
+      { id: "r1", label: "Required 1", required: true },
+      { id: "r2", label: "Required 2", required: true },
+      { id: "opt", label: "Optional",  required: false },
+    ];
+    const ag = widgets.renderAgreement({ selector: "#d5-5", clauses });
+    const host = agreementHost("d5-5");
+    const sr = host.shadowRoot!;
+
+    const agreedValues: boolean[] = [];
+    ag.on("agreementStatusChange", (v) => agreedValues.push(v));
+
+    const inputs = Array.from(sr.querySelectorAll("input[type=checkbox]")) as HTMLInputElement[];
+    // inputs[0]=master, [1]=r1, [2]=r2, [3]=opt
+
+    // Check r1 only → not agreed.
+    inputs[1]!.checked = true;
+    inputs[1]!.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(agreedValues.at(-1)).toBe(false);
+
+    // Check r2 → now agreed (opt still unchecked but optional).
+    const inputs2 = Array.from(
+      host.shadowRoot!.querySelectorAll("input[type=checkbox]"),
+    ) as HTMLInputElement[];
+    inputs2[2]!.checked = true;
+    inputs2[2]!.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(agreedValues.at(-1)).toBe(true);
+  });
+
+  // 6. Optional unchecked clause does NOT block overall agreed.
+  it("optional unchecked clause does not block overall agreed", async () => {
+    const widgets = await makeAgreementWidgets();
+    makeTarget("d5-6");
+    const clauses: AgreementClause[] = [
+      { id: "req", label: "Required", required: true },
+      { id: "opt", label: "Optional", required: false },
+    ];
+    const ag = widgets.renderAgreement({ selector: "#d5-6", clauses });
+    const host = agreementHost("d5-6");
+    const sr = host.shadowRoot!;
+
+    const agreedValues: boolean[] = [];
+    ag.on("agreementStatusChange", (v) => agreedValues.push(v));
+
+    const inputs = Array.from(sr.querySelectorAll("input[type=checkbox]")) as HTMLInputElement[];
+    // Check only required clause (inputs[1]).
+    inputs[1]!.checked = true;
+    inputs[1]!.dispatchEvent(new Event("change", { bubbles: true }));
+
+    // Optional (inputs[2]) is unchecked; agreed should still be true.
+    expect(agreedValues.at(-1)).toBe(true);
+  });
+
+  // 7. clauseChange event fires per individual clause toggle.
+  it("clauseChange event fires with correct id and checked value per toggle", async () => {
+    const widgets = await makeAgreementWidgets();
+    makeTarget("d5-7");
+    const clauses: AgreementClause[] = [
+      { id: "alpha", label: "Alpha", required: true },
+      { id: "beta",  label: "Beta",  required: false },
+    ];
+    const ag = widgets.renderAgreement({ selector: "#d5-7", clauses });
+    const host = agreementHost("d5-7");
+    const sr = host.shadowRoot!;
+
+    const changes: Array<{ id: string; checked: boolean }> = [];
+    ag.on("clauseChange", (payload) => changes.push(payload));
+
+    const inputs = Array.from(sr.querySelectorAll("input[type=checkbox]")) as HTMLInputElement[];
+    // Toggle alpha (inputs[1]).
+    inputs[1]!.checked = true;
+    inputs[1]!.dispatchEvent(new Event("change", { bubbles: true }));
+
+    // Toggle beta (inputs[2]).
+    const inputs2 = Array.from(
+      host.shadowRoot!.querySelectorAll("input[type=checkbox]"),
+    ) as HTMLInputElement[];
+    inputs2[2]!.checked = true;
+    inputs2[2]!.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(changes).toHaveLength(2);
+    expect(changes[0]).toEqual({ id: "alpha", checked: true });
+    expect(changes[1]).toEqual({ id: "beta", checked: true });
+  });
+
+  // 8. Clause with href renders anchor with target="_blank" and rel containing "noopener".
+  it("clause with href renders anchor with target='_blank' and rel containing 'noopener'", async () => {
+    const widgets = await makeAgreementWidgets();
+    makeTarget("d5-8");
+    const clauses: AgreementClause[] = [
+      { id: "tos", label: "Terms", required: true, href: "https://terms.example.com/tos" },
+    ];
+    widgets.renderAgreement({ selector: "#d5-8", clauses });
+    const host = agreementHost("d5-8");
+    const anchor = host.shadowRoot?.querySelector("a.oc-clause-link") as HTMLAnchorElement | null;
+    expect(anchor).toBeTruthy();
+    expect(anchor?.getAttribute("target")).toBe("_blank");
+    expect(anchor?.getAttribute("rel")).toContain("noopener");
+    expect(anchor?.getAttribute("href")).toBe("https://terms.example.com/tos");
+  });
+
+  // 9. Clause with javascript: href rejects at render with OpenCheckoutValidationError.
+  it("clause with javascript: href rejects at render with OpenCheckoutValidationError", async () => {
+    const widgets = await makeAgreementWidgets();
+    makeTarget("d5-9");
+    const clauses: AgreementClause[] = [
+      { id: "evil", label: "Evil", required: true, href: "javascript:alert(1)" },
+    ];
+    expect(() => widgets.renderAgreement({ selector: "#d5-9", clauses })).toThrow(
+      OpenCheckoutValidationError,
+    );
+  });
+
+  // 10. PAN in clause label rejects at render via assertPanFree.
+  it("PAN in clause label rejects at render (assertPanFree triggered)", async () => {
+    const widgets = await makeAgreementWidgets();
+    makeTarget("d5-10");
+    const clauses: AgreementClause[] = [
+      { id: "pan", label: "4111 1111 1111 1111", required: true },
+    ];
+    expect(() => widgets.renderAgreement({ selector: "#d5-10", clauses })).toThrow(
+      OpenCheckoutSecurityError,
+    );
   });
 });

@@ -188,6 +188,11 @@ export function mountAddressWidget(
     const filtered = countryOpen ? searchCountries(countryQuery, locale) : COUNTRIES;
     const safeIdx = Math.min(countryActiveIdx, Math.max(0, filtered.length - 1));
     const inputValue = countryOpen ? countryQuery : locale === "ko" ? schema.nameKo : schema.nameEn;
+    // Build the active descendant id: points at the highlighted option when open.
+    const activeOptionId =
+      countryOpen && filtered.length > 0
+        ? `oc-country-${safeIdx}-${(filtered[safeIdx]?.code ?? "").toLowerCase()}`
+        : "";
     return h(
       "div",
       { class: "oc-field" },
@@ -201,6 +206,7 @@ export function mountAddressWidget(
           role: "combobox",
           "aria-expanded": countryOpen ? "true" : "false",
           "aria-autocomplete": "list",
+          "aria-activedescendant": activeOptionId,
           autocomplete: "off",
           value: inputValue,
           onFocus: () => {
@@ -253,6 +259,7 @@ export function mountAddressWidget(
                 h(
                   "li",
                   {
+                    id: `oc-country-${i}-${c.code.toLowerCase()}`,
                     class: "oc-combo-item",
                     role: "option",
                     "aria-selected": i === safeIdx ? "true" : "false",

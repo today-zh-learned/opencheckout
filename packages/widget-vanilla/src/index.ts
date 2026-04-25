@@ -32,7 +32,7 @@ export {
 export type { AddressWidget } from "./widgets/address-widget.js";
 export type { ShippingWidget } from "./widgets/shipping-widget.js";
 export type { PaymentWidget } from "./widgets/payment-widget.js";
-export type { AgreementWidget } from "./widgets/agreement-widget.js";
+export type { AgreementClause, AgreementWidget } from "./widgets/agreement-widget.js";
 
 export type {
   OrderInfo,
