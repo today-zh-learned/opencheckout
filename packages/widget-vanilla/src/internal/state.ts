@@ -11,8 +11,16 @@ export type BuyerCountry = string;
 
 export type AddressSelection = {
   readonly country: string;
-  readonly zip: string;
+  readonly admin1?: string;
+  readonly admin1Code?: string;
+  readonly admin2?: string;
+  readonly admin2Code?: string;
+  readonly city?: string;
   readonly line1: string;
+  readonly line2?: string;
+  readonly postal: string;
+  /** @deprecated Use `postal`. Kept as a mirror of `postal` for backward compatibility. */
+  readonly zip: string;
 };
 
 export type ShippingSelection = {

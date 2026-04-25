@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   CHECKOUT_EVENT_NAME,
+  COUNTRIES,
+  COUNTRY_BY_CODE,
   CUSTOMER_KEY_ANONYMOUS,
+  FALLBACK_COUNTRY,
   OpenCheckout,
   OpenCheckoutSecurityError,
   OpenCheckoutValidationError,
@@ -9,8 +12,11 @@ import {
   assertPanFree,
   containsPan,
   createWidgetMessage,
+  getCountrySchema,
   isOpenCheckoutMessage,
+  isValidPostal,
   load,
+  searchCountries,
 } from "./index.js";
 
 function makeTarget(id: string): HTMLElement {
@@ -267,5 +273,174 @@ describe("setOrder / setAmount PAN scan", () => {
     expect(() => widgets.setOrder({ id: "order_1", name: "4111 1111 1111 1111" })).toThrow(
       OpenCheckoutSecurityError,
     );
+  });
+});
+
+describe("address-data global registry", () => {
+  it("registers 15 countries indexed by ISO code", () => {
+    expect(COUNTRIES.length).toBe(15);
+    expect(COUNTRY_BY_CODE.get("KR")?.nameKo).toBe("대한민국");
+    expect(COUNTRY_BY_CODE.get("US")?.nameEn).toBe("United States");
+  });
+
+  it("KR schema exposes all 17 admin1 entries", () => {
+    const kr = COUNTRY_BY_CODE.get("KR");
+    expect(kr).toBeDefined();
+    expect(kr?.admin1?.length).toBe(17);
+    // 서울 has 25 구
+    const seoul = kr?.admin1?.find((e) => e.code === "KR-11");
+    expect(seoul?.children?.length).toBe(25);
+  });
+
+  it("HK has 18 districts and hides postal", () => {
+    const hk = COUNTRY_BY_CODE.get("HK");
+    expect(hk?.admin1?.length).toBe(18);
+    expect(hk?.fields).toEqual(["admin2", "line1", "line2"]);
+  });
+
+  it("SG fields are postal/line1/line2 only", () => {
+    const sg = COUNTRY_BY_CODE.get("SG");
+    expect(sg?.fields).toEqual(["postal", "line1", "line2"]);
+  });
+
+  it("KR fields ordering matches design spec", () => {
+    const kr = COUNTRY_BY_CODE.get("KR");
+    expect(kr?.fields).toEqual(["admin1", "city", "admin2", "line1", "line2", "postal"]);
+  });
+
+  it("JP and US admin1 sizes match official subdivisions", () => {
+    expect(COUNTRY_BY_CODE.get("JP")?.admin1?.length).toBe(47);
+    expect(COUNTRY_BY_CODE.get("US")?.admin1?.length).toBe(51); // 50 states + DC
+  });
+
+  it("CN postalAutoFill maps every admin1 entry", () => {
+    const cn = COUNTRY_BY_CODE.get("CN");
+    expect(cn?.admin1?.length).toBe(31);
+    expect(Object.keys(cn?.postalAutoFill ?? {}).length).toBe(31);
+  });
+});
+
+describe("address-data search", () => {
+  it("matches Korean alias 한국 → KR", () => {
+    const result = searchCountries("한국", "ko");
+    expect(result[0]?.code).toBe("KR");
+  });
+
+  it("matches USA alias → US", () => {
+    const result = searchCountries("USA", "en");
+    expect(result.some((c) => c.code === "US")).toBe(true);
+  });
+
+  it("matches Japanese 日本 → JP", () => {
+    const result = searchCountries("日本", "en");
+    expect(result.some((c) => c.code === "JP")).toBe(true);
+  });
+
+  it("returns all 15 for empty query", () => {
+    expect(searchCountries("", "en").length).toBe(15);
+  });
+
+  it("falls back to ZZ for unknown ISO code", () => {
+    expect(getCountrySchema("XX")).toBe(FALLBACK_COUNTRY);
+  });
+
+  it("matches Korean chosung ㄷㅎㅁㄱ → 대한민국 (KR)", () => {
+    const result = searchCountries("ㄷㅎㅁㄱ", "ko");
+    expect(result.some((c) => c.code === "KR")).toBe(true);
+  });
+
+  it("matches Korean chosung ㅇㅂ → 일본 (JP)", () => {
+    const result = searchCountries("ㅇㅂ", "ko");
+    expect(result.some((c) => c.code === "JP")).toBe(true);
+  });
+});
+
+describe("postal validation", () => {
+  it("validates KR 5-digit postal", () => {
+    const kr = COUNTRY_BY_CODE.get("KR");
+    if (!kr) throw new Error("KR schema missing");
+    expect(isValidPostal(kr, "06236")).toBe(true);
+    expect(isValidPostal(kr, "1234")).toBe(false);
+  });
+
+  it("validates JP 7-digit (with optional dash)", () => {
+    const jp = COUNTRY_BY_CODE.get("JP");
+    if (!jp) throw new Error("JP schema missing");
+    expect(isValidPostal(jp, "1500001")).toBe(true);
+    expect(isValidPostal(jp, "150-0001")).toBe(true);
+    expect(isValidPostal(jp, "abc")).toBe(false);
+  });
+
+  it("validates Canada A1A 1A1 format", () => {
+    const ca = COUNTRY_BY_CODE.get("CA");
+    if (!ca) throw new Error("CA schema missing");
+    expect(isValidPostal(ca, "M5V 3L9")).toBe(true);
+    expect(isValidPostal(ca, "12345")).toBe(false);
+  });
+
+  it("HK has no regex (always valid)", () => {
+    const hk = COUNTRY_BY_CODE.get("HK");
+    if (!hk) throw new Error("HK schema missing");
+    expect(isValidPostal(hk, "")).toBe(true);
+    expect(isValidPostal(hk, "anything")).toBe(true);
+  });
+});
+
+describe("address widget — global behaviour", () => {
+  it("emits AddressSelection with both postal and zip aliased", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS" });
+    widgets.setAmount({ value: 1000, currency: "KRW" });
+
+    makeTarget("addr");
+    const addr = widgets.renderAddress({ selector: "#addr" });
+
+    let captured: { postal: string; zip: string } | null = null;
+    addr.on("addressSelect", (sel) => {
+      captured = { postal: sel.postal, zip: sel.zip };
+    });
+
+    const host = document.getElementById("addr")?.firstElementChild as HTMLElement;
+    const postalInput = host?.shadowRoot?.querySelector(
+      'input[inputmode="numeric"]',
+    ) as HTMLInputElement;
+    expect(postalInput).toBeTruthy();
+    postalInput.value = "06236";
+    postalInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(captured).not.toBeNull();
+    const c = captured as unknown as { postal: string; zip: string };
+    expect(c.postal).toBe("06236");
+    expect(c.zip).toBe("06236");
+  });
+
+  it("renders the KR admin1 select with 17 options + placeholder", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS" });
+    widgets.setAmount({ value: 1000, currency: "KRW" });
+    widgets.setOrder({ id: "order_1", name: "Test", buyerCountry: "KR" });
+
+    makeTarget("addr2");
+    widgets.renderAddress({ selector: "#addr2" });
+
+    const host = document.getElementById("addr2")?.firstElementChild as HTMLElement;
+    const select = host?.shadowRoot?.querySelector("select.oc-select") as HTMLSelectElement;
+    expect(select).toBeTruthy();
+    // 17 admin1 entries + 1 placeholder option
+    expect(select.options.length).toBe(18);
+  });
+
+  it("hides postal field when country is HK", async () => {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS" });
+    widgets.setAmount({ value: 1000, currency: "KRW" });
+    widgets.setOrder({ id: "order_1", name: "Test", buyerCountry: "HK" });
+
+    makeTarget("addr3");
+    widgets.renderAddress({ selector: "#addr3" });
+
+    const host = document.getElementById("addr3")?.firstElementChild as HTMLElement;
+    const numericInput = host?.shadowRoot?.querySelector('input[inputmode="numeric"]');
+    expect(numericInput).toBeNull();
   });
 });

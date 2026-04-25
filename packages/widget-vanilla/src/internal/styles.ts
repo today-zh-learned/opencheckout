@@ -121,4 +121,88 @@ export const WIDGET_CSS = `
     gap: 8px;
     font-size: 14px;
   }
+
+  .oc-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .oc-row .oc-field {
+    margin: 0 0 12px;
+  }
+
+  .oc-select {
+    background: #fff;
+    border: 1px solid rgba(87, 79, 52, 0.26);
+    border-radius: 10px;
+    font: inherit;
+    padding: 9px 12px;
+    width: 100%;
+    box-sizing: border-box;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, #6a5a2c 50%),
+      linear-gradient(135deg, #6a5a2c 50%, transparent 50%);
+    background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 30px;
+  }
+
+  .oc-select:focus-visible {
+    outline: 3px solid #d38b27;
+    outline-offset: 1px;
+  }
+
+  .oc-combo {
+    position: relative;
+  }
+
+  .oc-combo-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid rgba(87, 79, 52, 0.26);
+    border-radius: 10px;
+    box-shadow: 0 12px 28px rgba(45, 40, 25, 0.16);
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 50;
+  }
+
+  .oc-combo-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .oc-combo-item[aria-selected="true"],
+  .oc-combo-item:hover {
+    background: rgba(31, 77, 58, 0.1);
+  }
+
+  .oc-combo-item-sub {
+    color: #6a5a2c;
+    font-size: 11px;
+    margin-left: 6px;
+  }
+
+  .oc-input.oc-invalid,
+  .oc-select.oc-invalid {
+    border-color: #b3261e;
+    outline-color: #b3261e;
+  }
+
+  .oc-error-hint {
+    color: #b3261e;
+    font-size: 11px;
+    margin: 4px 0 0;
+  }
 `;

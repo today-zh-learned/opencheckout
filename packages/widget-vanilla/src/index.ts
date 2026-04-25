@@ -43,6 +43,19 @@ export type {
 } from "./internal/state.js";
 
 export {
+  COUNTRIES,
+  COUNTRY_BY_CODE,
+  FALLBACK_COUNTRY,
+  getCountrySchema,
+  getFieldLabel,
+  isValidPostal,
+  searchCountries,
+  type AddressFieldKey,
+  type AdminEntry,
+  type CountrySchema,
+} from "./internal/address-data.js";
+
+export {
   CUSTOMER_KEY_ANONYMOUS,
   OpenCheckoutValidationError,
   type Locale,

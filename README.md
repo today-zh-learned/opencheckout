@@ -1,14 +1,16 @@
 # OpenCheckout
 
-한국 셀러의 국내·글로벌 판매를 위한 오픈소스 **체크아웃 위젯**입니다.
-**결제**뿐 아니라 **주소 · 배송 · 약관**까지 한 번에 끼우면 끝나는 렌더-레디 위젯으로
-제공해 역직구 체크아웃 연동을 15분 이내로 끝내는 것을 목표로 합니다.
+한국 셀러의 국내·글로벌 판매에 쓰는 오픈소스 **체크아웃 위젯**입니다.
+**주소·배송·결제·약관** 4개 위젯을 머천트 페이지 4곳에 끼우면 끝납니다.
+역직구 체크아웃 연동을 18줄 안에서, 15분 이내에 마칩니다.
 
 - **License**: Apache 2.0
+- **Bundle**: 17 KB gzipped, 49 small tests, Preact 런타임 단일 공유
+- **Address coverage**: 15개국 스키마 · KR 시/도 17개 + 시/군/구 250+ cascading · 한글 초성 검색 · 우편번호 정규식 검증
 - **Status**: Pre-release (PRD v1, 19 ADR, 2 TDD)
 - **Maintainer**: [Ziho Shin (@today-zh-learned)](https://github.com/today-zh-learned) · ziho.shin@gmail.com
-- **Repo**: https://github.com/today-zh-learned/opencheckout (Phase 1 공개 예정)
-- **Sandbox**: https://today-zh-learned.github.io/opencheckout/sandbox.html (키 없이 바로 체험)
+- **Repo**: https://github.com/today-zh-learned/opencheckout
+- **Sandbox**: https://today-zh-learned.github.io/opencheckout/sandbox.html (키 없이 즉시 체험)
 
 ## 설계 철학
 
@@ -105,7 +107,18 @@ CheckoutWidgets {
 }
 
 // 각 서브 위젯은 자체 on()/destroy()를 가집니다
-AddressWidget.on("addressSelect", (a: { country: string; zip: string }) => void);
+AddressWidget.on("addressSelect", (a: {
+  country: string;
+  admin1?: string;        // 주/도 (예: 서울특별시)
+  admin1Code?: string;
+  admin2?: string;        // 구/군 (예: 강남구)
+  admin2Code?: string;
+  city?: string;
+  line1: string;
+  line2?: string;
+  postal: string;
+  zip: string;            // postal alias (deprecated, 호환용)
+}) => void);
 ShippingWidget.on("methodSelect", (m: { carrier: string; rate: number }) => void);
 PaymentWidget.on("paymentMethodSelect", (code: string) => void);
 AgreementWidget.on("agreementStatusChange", (agreed: boolean) => void);

@@ -3,363 +3,791 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>OpenCheckout Sandbox</title>
+    <title>OpenCheckout · Sandbox</title>
     <meta
       name="description"
       content="라이브 OpenCheckout SDK 샌드박스. 4개 위젯(주소·배송·결제·약관)을 키 없이 즉시 시연하고, 머천트가 실제 통합할 코드와 위젯이 발행하는 이벤트를 실시간으로 확인합니다."
     />
     <link rel="canonical" href="./sandbox.html" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap"
+    />
     <style>
+      /* =============================================================
+         OpenCheckout Sandbox — editorial terminal aesthetic
+         Type:  Fraunces (display, serif), Instrument Sans (UI),
+                JetBrains Mono (code & detail)
+         Grid:  4px base unit, 1440px max
+         ============================================================= */
       :root {
         color-scheme: light;
-        --bg: #f7f9fc;
+        --bg: #f6f5f1;
+        --bg-deep: #efede6;
         --surface: #ffffff;
-        --surface-soft: #f2f4f6;
-        --surface-blue: #eef6ff;
-        --ink: #191f28;
-        --muted: #6b7684;
-        --quiet: #8b95a1;
-        --line: #e5e8eb;
-        --line-strong: #d7dce2;
-        --blue: #3182f6;
-        --blue-strong: #1b64da;
-        --green: #00a86b;
-        --amber: #f59e0b;
-        --danger: #e4483d;
-        --code: #0f172a;
-        --code-soft: #172033;
-        --hl: rgba(255, 210, 60, 0.45);
-        --shadow: 0 24px 70px rgba(25, 31, 40, 0.08);
-        --radius-lg: 24px;
+        --surface-soft: #faf9f5;
+        --surface-alt: #f1efe8;
+        --ink: #0a0a0a;
+        --ink-soft: #2a2a2a;
+        --muted: #5b5b5b;
+        --quiet: #8e8b82;
+        --line: #e8e6e0;
+        --line-strong: #d4d1c8;
+        --line-faint: #f0eee7;
+        --accent: #4338ca;
+        --accent-strong: #3730a3;
+        --accent-soft: #eef0fe;
+        --accent-faint: #f6f7ff;
+        --success: #047857;
+        --success-soft: #ecfdf5;
+        --warning: #b45309;
+        --warning-soft: #fef3c7;
+        --danger: #b91c1c;
+        --danger-soft: #fef2f2;
+        --code-bg: #0d0d0e;
+        --code-bg-2: #18181b;
+        --code-line: #27272a;
+        --code-fg: #e4e4e7;
+        --code-dim: #71717a;
+        --hl: rgba(67, 56, 202, 0.18);
+        --shadow-sm: 0 1px 2px rgba(10, 10, 10, 0.04);
+        --shadow-md: 0 4px 12px rgba(10, 10, 10, 0.04), 0 1px 2px rgba(10, 10, 10, 0.04);
+        --shadow-lg: 0 24px 48px -12px rgba(10, 10, 10, 0.08), 0 4px 8px rgba(10, 10, 10, 0.04);
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 16px;
+        --radius-xl: 20px;
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+        --ease-snap: cubic-bezier(0.4, 0, 0.2, 1);
+        --t-fast: 140ms;
+        --t-base: 220ms;
+        --t-slow: 480ms;
+        --font-display: "Fraunces", "Iowan Old Style", "Georgia", serif;
+        --font-ui: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        --font-mono: "JetBrains Mono", "SFMono-Regular", "Cascadia Code", Consolas, monospace;
       }
+
+      /* Dark token prep — selector reserved, not toggled in v1.0 */
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #0d0d0e;
+        --bg-deep: #08080a;
+        --surface: #18181b;
+        --surface-soft: #1f1f23;
+        --surface-alt: #27272a;
+        --ink: #fafafa;
+        --ink-soft: #e4e4e7;
+        --muted: #a1a1aa;
+        --quiet: #71717a;
+        --line: #27272a;
+        --line-strong: #3f3f46;
+        --line-faint: #1f1f23;
+        --accent: #818cf8;
+        --accent-strong: #a5b4fc;
+        --accent-soft: #1e1b4b;
+        --accent-faint: #18162b;
+      }
+
       * { box-sizing: border-box; }
-      html { scroll-behavior: smooth; }
+      *::selection { background: var(--accent-soft); color: var(--accent-strong); }
+      html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
       body {
         margin: 0;
         min-height: 100vh;
-        background:
-          radial-gradient(circle at 78% 8%, rgba(49, 130, 246, 0.14), transparent 24rem),
-          linear-gradient(180deg, #ffffff 0%, var(--bg) 38%, #eef2f7 100%);
+        background: var(--bg);
         color: var(--ink);
-        font-family: Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+        font-family: var(--font-ui);
+        font-size: 14px;
+        line-height: 1.55;
+        font-feature-settings: "ss01", "cv11";
+        animation: fadein 480ms var(--ease) both;
       }
-      a { color: inherit; }
-      code, kbd { font-family: "SFMono-Regular", "Cascadia Code", "JetBrains Mono", Consolas, monospace; }
+      @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      }
+      a { color: var(--ink); text-decoration: none; }
+      button { font-family: inherit; }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
 
+      /* ---------- Topbar ---------- */
       .topbar {
-        position: sticky; top: 0; z-index: 10;
-        display: flex; align-items: center; gap: 28px;
-        min-height: 72px;
-        padding: 0 max(24px, calc((100vw - 1320px) / 2));
-        border-bottom: 1px solid rgba(229, 232, 235, 0.82);
-        background: rgba(255, 255, 255, 0.86);
-        backdrop-filter: blur(18px);
+        position: sticky; top: 0; z-index: 50;
+        display: flex; align-items: center; gap: 32px;
+        height: 56px;
+        padding: 0 max(20px, calc((100vw - 1440px) / 2 + 24px));
+        background: rgba(246, 245, 241, 0.85);
+        backdrop-filter: saturate(160%) blur(14px);
+        -webkit-backdrop-filter: saturate(160%) blur(14px);
+        border-bottom: 1px solid var(--line);
       }
-      .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); font-weight: 800; letter-spacing: -0.03em; text-decoration: none; }
+      .brand {
+        display: flex; align-items: center; gap: 10px;
+        color: var(--ink); font-weight: 600;
+        font-family: var(--font-display);
+        font-size: 17px; letter-spacing: -0.02em;
+      }
       .brand-mark {
-        display: grid; width: 34px; height: 34px; border-radius: 12px;
-        background: linear-gradient(145deg, var(--blue), #73b3ff);
-        color: #fff; font-weight: 900; place-items: center;
-        box-shadow: 0 12px 30px rgba(49, 130, 246, 0.28);
+        display: grid; width: 26px; height: 26px;
+        border-radius: 7px;
+        background: var(--ink); color: var(--bg);
+        font-family: var(--font-mono);
+        font-size: 13px; font-weight: 600;
+        place-items: center;
       }
-      .nav { display: flex; gap: 4px; }
+      .nav { display: flex; gap: 2px; }
       .nav a {
-        padding: 10px 12px; border-radius: 999px;
-        color: var(--muted); font-size: 0.92rem; font-weight: 700; text-decoration: none;
+        padding: 7px 11px; border-radius: 7px;
+        color: var(--muted);
+        font-size: 13.5px; font-weight: 500;
+        transition: color var(--t-fast) var(--ease-snap), background var(--t-fast) var(--ease-snap);
       }
-      .nav a[aria-current="page"] { background: var(--surface-soft); color: var(--ink); }
-      .top-actions { margin-left: auto; }
-
-      .button {
-        display: inline-flex; align-items: center; justify-content: center;
-        min-height: 40px; padding: 0 16px;
-        border: 0; border-radius: 12px;
-        background: var(--blue); color: #fff;
-        font: inherit; font-weight: 800; font-size: 0.92rem;
-        text-decoration: none; cursor: pointer;
-        box-shadow: 0 10px 24px rgba(49, 130, 246, 0.22);
+      .nav a:hover { color: var(--ink); background: var(--surface-alt); }
+      .nav a[aria-current="page"] { color: var(--ink); background: var(--surface-alt); }
+      .top-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+      .top-meta {
+        font-family: var(--font-mono);
+        font-size: 11.5px; color: var(--quiet); letter-spacing: -0.01em;
       }
-      .button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
-      .button.secondary { border: 1px solid var(--line); background: var(--surface); color: var(--ink); box-shadow: none; }
-      .button.ghost { background: transparent; color: var(--muted); box-shadow: none; }
-      .button.danger { background: #fef2f2; color: var(--danger); box-shadow: none; border: 1px solid #fecaca; }
 
+      /* ---------- Buttons ---------- */
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        height: 34px; padding: 0 14px;
+        border: 1px solid transparent; border-radius: 8px;
+        background: var(--ink); color: var(--bg);
+        font-size: 13px; font-weight: 500;
+        cursor: pointer;
+        transition:
+          background var(--t-fast) var(--ease-snap),
+          color var(--t-fast) var(--ease-snap),
+          border-color var(--t-fast) var(--ease-snap),
+          transform var(--t-fast) var(--ease-snap),
+          box-shadow var(--t-fast) var(--ease-snap);
+      }
+      .btn:hover { background: var(--ink-soft); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+      .btn:active { transform: translateY(0); }
+      .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+      .btn.secondary { background: var(--surface); color: var(--ink); border-color: var(--line-strong); }
+      .btn.secondary:hover { background: var(--surface-soft); border-color: var(--ink); }
+      .btn.ghost { background: transparent; color: var(--muted); }
+      .btn.ghost:hover { background: var(--surface-alt); color: var(--ink); transform: none; box-shadow: none; }
+      .btn.danger { background: var(--danger-soft); color: var(--danger); border-color: #f5c0c0; }
+      .btn.danger:hover { background: #fde4e4; border-color: var(--danger); }
+      .btn.accent { background: var(--accent); color: #fff; }
+      .btn.accent:hover { background: var(--accent-strong); }
+      .btn.lg { height: 40px; padding: 0 18px; font-size: 13.5px; }
+      .btn.sm { height: 28px; padding: 0 10px; font-size: 12px; }
+
+      /* ---------- Shell ---------- */
       .shell {
-        width: min(1320px, calc(100% - 40px));
+        max-width: 1440px;
         margin: 0 auto;
-        padding: 28px 0 72px;
+        padding: 32px max(20px, 24px) 80px;
       }
 
-      .hero { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
-      .eyebrow {
-        display: inline-flex; align-items: center; gap: 8px; align-self: start;
-        padding: 7px 12px; border: 1px solid #cfe3ff; border-radius: 999px;
-        background: #f4f9ff; color: var(--blue-strong);
-        font-size: 0.78rem; font-weight: 900;
+      /* ---------- Hero ---------- */
+      .hero {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: end;
+        gap: 32px;
+        margin-bottom: 28px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--line);
       }
-      .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 6px rgba(0, 168, 107, 0.12); }
-      h1 { margin: 0; font-size: clamp(1.9rem, 3.6vw, 2.6rem); letter-spacing: -0.05em; line-height: 1.1; }
-      .lead { max-width: 820px; margin: 2px 0 0; color: var(--muted); font-size: 1rem; line-height: 1.7; letter-spacing: -0.01em; }
+      .hero-meta {
+        display: flex; align-items: center; gap: 8px;
+        margin-bottom: 14px;
+        font-family: var(--font-mono);
+        font-size: 11px; color: var(--quiet);
+        letter-spacing: 0.05em; text-transform: uppercase;
+      }
+      .hero-meta .live-dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--success);
+        box-shadow: 0 0 0 0 rgba(4, 120, 87, 0.5);
+        animation: livedot 2.4s var(--ease) infinite;
+      }
+      @keyframes livedot {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(4, 120, 87, 0.4); }
+        50% { box-shadow: 0 0 0 6px rgba(4, 120, 87, 0); }
+      }
+      .hero h1 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 500;
+        font-size: clamp(2.2rem, 4.4vw, 3.4rem);
+        line-height: 1.02;
+        letter-spacing: -0.035em;
+        color: var(--ink);
+        font-variation-settings: "opsz" 144;
+      }
+      .hero h1 em {
+        font-style: italic;
+        font-weight: 400;
+        color: var(--accent);
+      }
+      .hero p.lead {
+        max-width: 56ch;
+        margin: 14px 0 0;
+        color: var(--muted);
+        font-size: 15px; line-height: 1.65;
+      }
+      .hero-chips {
+        display: flex; flex-wrap: wrap; gap: 6px;
+      }
+      .chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 10px;
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        background: var(--surface);
+        font-family: var(--font-mono);
+        font-size: 11.5px; color: var(--ink-soft);
+        white-space: nowrap;
+      }
+      .chip strong { color: var(--accent); font-weight: 600; }
+      .chip .sep { color: var(--line-strong); }
 
       .banner {
         display: none;
-        margin: 0 0 16px;
-        padding: 14px 16px;
-        border: 1px solid #fbd5d5; border-radius: 14px;
-        background: #fff5f5; color: #9b2c2c;
-        font-size: 0.88rem; font-weight: 700;
+        margin: 0 0 20px;
+        padding: 12px 16px;
+        border: 1px solid #f5c0c0; border-left: 3px solid var(--danger);
+        border-radius: var(--radius-md);
+        background: var(--danger-soft); color: var(--danger);
+        font-size: 13px; font-weight: 500;
       }
-      .banner.visible { display: block; }
+      .banner.visible { display: block; animation: slidein 320ms var(--ease); }
+      @keyframes slidein { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+      .banner code { font-family: var(--font-mono); font-size: 12px; background: rgba(185, 28, 28, 0.08); padding: 1px 6px; border-radius: 4px; }
 
+      /* ---------- Playground grid ---------- */
       .playground {
         display: grid;
-        grid-template-columns: 380px minmax(0, 1fr);
-        gap: 18px;
+        grid-template-columns: 360px minmax(0, 1fr);
+        gap: 20px;
         align-items: start;
       }
+      @media (max-width: 1024px) {
+        .playground { grid-template-columns: 1fr; }
+      }
 
+      /* ---------- Panel primitive ---------- */
       .panel {
         border: 1px solid var(--line);
         border-radius: var(--radius-lg);
         background: var(--surface);
-        box-shadow: var(--shadow);
         overflow: hidden;
       }
+      .panel + .panel { margin-top: 16px; }
       .panel-head {
         display: flex; align-items: center; gap: 10px;
-        padding: 14px 18px;
+        padding: 12px 16px;
         border-bottom: 1px solid var(--line);
+        background: var(--surface-soft);
       }
-      .panel-title { margin: 0; font-size: 0.96rem; font-weight: 900; letter-spacing: -0.02em; }
-      .panel-sub { margin-left: auto; color: var(--quiet); font-size: 0.78rem; font-weight: 800; }
+      .panel-title {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 500;
+        font-size: 14px;
+        letter-spacing: -0.015em;
+        color: var(--ink);
+      }
+      .panel-meta {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--quiet);
+        letter-spacing: -0.005em;
+      }
+      .panel-meta.status-mounted { color: var(--success); }
+      .panel-meta.status-error { color: var(--danger); }
 
-      /* ---------- Left column ---------- */
-      .left { position: sticky; top: 96px; display: grid; gap: 18px; }
-      .config { display: grid; gap: 12px; padding: 16px 18px; }
-      .field { display: grid; gap: 6px; }
-      .field label { color: var(--muted); font-size: 0.76rem; font-weight: 800; letter-spacing: 0.02em; }
-      .field input, .field select {
-        min-height: 38px; padding: 0 11px;
-        border: 1px solid var(--line); border-radius: 10px;
-        background: var(--surface); color: var(--ink);
-        font: inherit; font-size: 0.9rem;
+      /* ---------- Left: sticky col ---------- */
+      .left {
+        position: sticky;
+        top: 76px;
+        display: grid;
+        gap: 16px;
+        max-height: calc(100vh - 92px);
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--line-strong) transparent;
       }
-      .field input[readonly] { background: var(--surface-soft); color: var(--quiet); }
+      .left::-webkit-scrollbar { width: 6px; }
+      .left::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
+      @media (max-width: 1024px) {
+        .left { position: static; max-height: none; overflow: visible; }
+      }
+
+      .config { display: grid; gap: 12px; padding: 14px 16px; }
+      .field { display: grid; gap: 5px; }
+      .field label {
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--quiet);
+        text-transform: lowercase;
+        letter-spacing: 0;
+      }
+      .field input, .field select {
+        height: 34px; padding: 0 11px;
+        border: 1px solid var(--line-strong); border-radius: 8px;
+        background: var(--surface); color: var(--ink);
+        font-family: var(--font-mono); font-size: 12.5px;
+        transition: border-color var(--t-fast) var(--ease-snap), box-shadow var(--t-fast) var(--ease-snap);
+      }
+      .field input[readonly] { background: var(--surface-alt); color: var(--ink-soft); cursor: default; }
       .field input:focus, .field select:focus {
-        outline: 3px solid rgba(49, 130, 246, 0.25);
-        border-color: var(--blue);
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12);
       }
       .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-      .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-      .chip {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 4px 8px; border-radius: 999px;
-        background: #ecfdf5; color: #047857;
-        font-size: 0.7rem; font-weight: 800;
+      .field-inline { display: flex; gap: 6px; }
+      .field-inline input { flex: 1; min-width: 0; }
+      .pill {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: var(--accent-soft); color: var(--accent-strong);
+        font-family: var(--font-mono); font-size: 9.5px;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        font-weight: 600;
       }
-      .config-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 16px; }
-      .config-actions .button { flex: 1 1 auto; }
 
-      .state-card { padding: 14px 18px; }
+      .config-actions {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        padding: 0 16px 14px;
+      }
+      .config-actions .btn { height: 32px; }
+      .config-actions .btn.full { grid-column: span 2; }
+
+      /* ---------- State card ---------- */
+      .state-card { padding: 12px 16px 14px; }
       .state-row {
         display: grid;
-        grid-template-columns: 86px 1fr;
-        gap: 10px;
-        padding: 6px 0;
-        border-bottom: 1px dashed var(--line);
-        font-size: 0.84rem;
+        grid-template-columns: 80px 1fr;
+        gap: 8px; align-items: baseline;
+        padding: 5px 0;
+        border-bottom: 1px solid var(--line-faint);
       }
       .state-row:last-child { border-bottom: 0; }
-      .state-key { color: var(--quiet); font-weight: 800; }
-      .state-val {
-        font-family: "SFMono-Regular", monospace;
-        font-size: 0.82rem;
-        color: var(--ink);
-        word-break: break-all;
+      .state-key {
+        font-family: var(--font-mono);
+        font-size: 11px; color: var(--quiet);
       }
+      .state-val {
+        font-family: var(--font-mono);
+        font-size: 12px; color: var(--ink);
+        word-break: break-all;
+        padding: 2px 4px;
+        margin: -2px -4px;
+        border-radius: 4px;
+      }
+      .state-val.muted { color: var(--quiet); }
+      .state-val.ok { color: var(--success); font-weight: 500; }
+      .state-val.err { color: var(--danger); font-weight: 500; }
       .state-row.changed .state-val {
-        animation: hl 480ms ease-out;
-        border-radius: 6px;
+        animation: hl 480ms var(--ease) both;
       }
       @keyframes hl {
         0% { background: var(--hl); }
         100% { background: transparent; }
       }
-      .state-val.muted { color: var(--quiet); }
-      .state-val.ok { color: var(--green); font-weight: 800; }
 
+      /* ---------- Event log ---------- */
+      .log-toolbar {
+        display: flex; gap: 8px;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        background: var(--surface-soft);
+      }
+      .log-search {
+        flex: 1; min-width: 0;
+        height: 28px; padding: 0 10px;
+        border: 1px solid var(--line-strong); border-radius: 7px;
+        background: var(--surface);
+        font-family: var(--font-mono); font-size: 12px;
+        color: var(--ink);
+      }
+      .log-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12); }
       .log {
-        max-height: 320px;
+        max-height: 280px;
         overflow: auto;
-        padding: 8px 12px 14px;
-        background: var(--code);
-        color: #d5dde8;
-        font-family: "SFMono-Regular", monospace;
-        font-size: 0.78rem;
+        padding: 4px 0;
+        background: var(--code-bg);
+        font-family: var(--font-mono);
+        font-size: 11.5px;
         line-height: 1.55;
       }
+      .log::-webkit-scrollbar { width: 6px; }
+      .log::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
       .log-entry {
         display: grid;
-        grid-template-columns: 64px auto 1fr;
-        gap: 8px;
-        padding: 4px 0;
-        border-bottom: 1px dashed rgba(255, 255, 255, 0.04);
+        grid-template-columns: 8px 56px 96px 1fr;
+        gap: 6px;
+        padding: 4px 12px 4px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        align-items: baseline;
       }
-      .log-time { color: #64748b; }
-      .log-type { font-weight: 800; }
-      .log-type.session { color: #94a3b8; }
-      .log-type.amount, .log-type.order { color: #fbbf24; }
-      .log-type.address, .log-type.shipping, .log-type.payment { color: #7dd3fc; }
-      .log-type.agreement { color: #86efac; }
-      .log-type.pan { color: #fca5a5; }
-      .log-type.error { color: #fca5a5; }
-      .log-body { color: #cbd5e1; word-break: break-all; }
-      .log-empty { padding: 18px; color: #64748b; text-align: center; font-size: 0.82rem; }
+      .log-entry .bar {
+        height: 100%; min-height: 14px;
+        background: var(--code-line);
+      }
+      .log-entry.session .bar { background: #6b7280; }
+      .log-entry.address .bar, .log-entry.shipping .bar { background: #38bdf8; }
+      .log-entry.payment .bar { background: #818cf8; }
+      .log-entry.agreement .bar { background: #34d399; }
+      .log-entry.pan .bar, .log-entry.error .bar { background: #f87171; }
 
-      /* ---------- Right column ---------- */
-      .stage { display: grid; gap: 18px; }
+      .log-time { color: var(--code-dim); font-size: 10.5px; }
+      .log-type { font-weight: 600; }
+      .log-type.session { color: #d4d4d8; }
+      .log-type.address, .log-type.shipping { color: #7dd3fc; }
+      .log-type.payment { color: #a5b4fc; }
+      .log-type.agreement { color: #6ee7b7; }
+      .log-type.pan, .log-type.error { color: #fca5a5; }
+      .log-body { color: #d4d4d8; word-break: break-all; }
+      .log-empty {
+        padding: 24px 16px;
+        color: var(--code-dim);
+        text-align: center;
+        font-size: 11.5px;
+        line-height: 1.7;
+      }
+      .log-empty strong { color: #a1a1aa; display: block; margin-bottom: 4px; font-weight: 500; }
+
+      /* ---------- Stage / mount grid ---------- */
+      .stage { display: grid; gap: 16px; }
       .mount-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 14px;
+        gap: 16px;
+      }
+      @media (max-width: 700px) {
+        .mount-row { grid-template-columns: 1fr; }
       }
       .mount-card {
         position: relative;
         border: 1px solid var(--line);
-        border-radius: 18px;
+        border-radius: var(--radius-lg);
         background: var(--surface);
-        box-shadow: var(--shadow);
         overflow: hidden;
+        transition: border-color var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
       }
+      .mount-card.is-mounted { border-color: var(--line-strong); }
       .mount-head {
-        display: flex; align-items: center; gap: 8px;
-        padding: 12px 14px; border-bottom: 1px solid var(--line);
+        display: flex; align-items: center; gap: 10px;
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--line);
         background: var(--surface-soft);
       }
-      .mount-head h3 { margin: 0; font-size: 0.86rem; font-weight: 900; letter-spacing: -0.01em; }
-      .mount-tag {
+      .mount-num {
+        display: grid; place-items: center;
+        width: 22px; height: 22px;
+        border: 1px solid var(--line-strong);
+        border-radius: 6px;
+        background: var(--surface);
+        font-family: var(--font-mono);
+        font-size: 11px; color: var(--muted);
+        font-weight: 500;
+      }
+      .mount-card.is-mounted .mount-num {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .mount-head h3 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 500;
+        font-size: 14px;
+        letter-spacing: -0.015em;
+      }
+      .mount-status {
+        display: inline-flex; align-items: center; gap: 5px;
         margin-left: auto;
-        padding: 2px 8px; border-radius: 999px;
-        background: var(--surface-blue); color: var(--blue-strong);
-        font-size: 0.7rem; font-weight: 900; font-family: "SFMono-Regular", monospace;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: var(--surface-alt);
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--quiet);
+        letter-spacing: -0.005em;
+      }
+      .mount-status .dot {
+        width: 5px; height: 5px; border-radius: 50%;
+        background: var(--quiet);
+      }
+      .mount-card.is-mounted .mount-status { color: var(--success); background: var(--success-soft); }
+      .mount-card.is-mounted .mount-status .dot { background: var(--success); animation: livedot 2.4s var(--ease) infinite; }
+      .mount-tag {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--quiet);
       }
       .mount-target {
-        padding: 14px;
-        min-height: 110px;
+        padding: 16px;
+        min-height: 140px;
         display: grid;
         place-items: stretch;
       }
       .mount-empty {
-        margin: auto;
-        padding: 14px;
-        color: var(--quiet); font-size: 0.82rem;
-        text-align: center;
+        margin: auto 0;
+        display: grid; gap: 10px;
       }
-      .mount-card.pulse-now {
-        animation: cardpulse 240ms ease-out;
+      .skeleton {
+        height: 14px;
+        border-radius: 4px;
+        background: linear-gradient(90deg, var(--surface-alt) 0%, var(--surface-soft) 50%, var(--surface-alt) 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.6s linear infinite;
       }
-      @keyframes cardpulse {
-        0% { box-shadow: var(--shadow), 0 0 0 0 rgba(49, 130, 246, 0.5); }
-        50% { box-shadow: var(--shadow), 0 0 0 8px rgba(49, 130, 246, 0.18); }
-        100% { box-shadow: var(--shadow), 0 0 0 0 rgba(49, 130, 246, 0); }
+      .skeleton.w-3-4 { width: 75%; }
+      .skeleton.w-1-2 { width: 50%; }
+      .skeleton.w-5-6 { width: 83%; }
+      @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      .mount-empty p {
+        margin: 4px 0 0;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--quiet);
+        text-align: left;
       }
 
-      .stage-actions {
-        display: flex; flex-wrap: wrap; gap: 10px;
-        padding: 14px 18px;
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        background: var(--surface);
-        box-shadow: var(--shadow);
+      .mount-card.pulse-now { animation: cardpulse 600ms var(--ease) both; }
+      @keyframes cardpulse {
+        0% { box-shadow: 0 0 0 0 rgba(67, 56, 202, 0); transform: scale(1); }
+        30% { box-shadow: 0 0 0 6px rgba(67, 56, 202, 0.18); transform: scale(1.005); }
+        100% { box-shadow: 0 0 0 0 rgba(67, 56, 202, 0); transform: scale(1); }
       }
-      .stage-actions .button { min-height: 44px; }
+
+      /* ---------- Stage actions ---------- */
+      .stage-actions {
+        display: flex; flex-wrap: wrap; gap: 8px;
+        padding: 14px 16px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+      }
+      .stage-actions-label {
+        display: flex; align-items: center; gap: 6px;
+        margin-right: auto;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--quiet);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
 
       /* ---------- Code panel ---------- */
-      .code-panel { margin-top: 18px; }
-      .tabs { display: flex; gap: 4px; padding: 10px 14px 0; flex-wrap: wrap; }
-      .tab {
-        border: 0; border-radius: 10px 10px 0 0;
-        background: transparent; color: var(--muted);
-        cursor: pointer; font: inherit;
-        font-size: 0.82rem; font-weight: 850;
-        padding: 9px 12px;
+      .code-panel { margin-top: 0; }
+      .tabs {
+        display: flex; gap: 0;
+        padding: 0 12px;
+        border-bottom: 1px solid var(--line);
+        background: var(--surface-soft);
+        overflow-x: auto;
+        scrollbar-width: none;
       }
-      .tab[aria-selected="true"] { background: var(--code); color: #fff; }
+      .tabs::-webkit-scrollbar { display: none; }
+      .tab {
+        position: relative;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 500;
+        padding: 11px 12px;
+        white-space: nowrap;
+        transition: color var(--t-fast) var(--ease-snap);
+      }
+      .tab:hover { color: var(--ink); }
+      .tab[aria-selected="true"] { color: var(--accent); }
+      .tab[aria-selected="true"]::after {
+        content: "";
+        position: absolute;
+        left: 8px; right: 8px; bottom: -1px;
+        height: 2px;
+        background: var(--accent);
+      }
+
       .code-head {
         display: flex; align-items: center; gap: 10px;
         padding: 10px 14px;
-        background: var(--code-soft);
+        background: var(--code-bg-2);
+        border-bottom: 1px solid var(--code-line);
       }
-      .code-name { color: #d5dde8; font-size: 0.82rem; font-weight: 800; font-family: "SFMono-Regular", monospace; }
-      .code-meta { margin-left: auto; color: #94a3b8; font-size: 0.76rem; font-weight: 700; }
+      .code-head .traffic { display: flex; gap: 6px; }
+      .code-head .traffic span {
+        width: 9px; height: 9px; border-radius: 50%;
+        background: var(--code-line);
+      }
+      .code-head .traffic span:nth-child(1) { background: #f87171; }
+      .code-head .traffic span:nth-child(2) { background: #fbbf24; }
+      .code-head .traffic span:nth-child(3) { background: #34d399; }
+      .code-name {
+        color: var(--code-fg);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .code-meta {
+        margin-left: auto;
+        color: var(--code-dim);
+        font-family: var(--font-mono);
+        font-size: 11px;
+      }
       .copy {
-        padding: 6px 10px;
-        border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px;
-        background: rgba(255, 255, 255, 0.06); color: #d5dde8;
-        cursor: pointer; font: inherit; font-size: 0.76rem; font-weight: 800;
+        height: 26px; padding: 0 10px;
+        border: 1px solid var(--code-line); border-radius: 6px;
+        background: rgba(255, 255, 255, 0.04); color: var(--code-fg);
+        cursor: pointer;
+        font-family: var(--font-mono); font-size: 11px;
+        transition: background var(--t-fast) var(--ease-snap), border-color var(--t-fast) var(--ease-snap);
       }
+      .copy:hover { background: rgba(255, 255, 255, 0.08); border-color: #52525b; }
+      .copy.success { color: #6ee7b7; border-color: #065f46; }
+
       .code-wrap {
-        background: var(--code);
-        color: #d5dde8;
-        max-height: 420px;
+        background: var(--code-bg);
+        max-height: 460px;
         overflow: auto;
       }
+      .code-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
+      .code-wrap::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
       pre {
         margin: 0;
-        padding: 18px 20px;
-        font-family: "SFMono-Regular", monospace;
-        font-size: 0.86rem; line-height: 1.7;
-        white-space: pre;
+        padding: 16px 0;
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        line-height: 1.75;
+        color: var(--code-fg);
       }
       .code-pane[hidden] { display: none; }
-      .kw { color: #8ab4ff; }
+      .code-line {
+        display: grid;
+        grid-template-columns: 44px 1fr;
+        gap: 0;
+        padding: 0 16px 0 0;
+      }
+      .code-line:hover { background: rgba(255, 255, 255, 0.03); }
+      .code-line .ln {
+        text-align: right;
+        padding-right: 14px;
+        color: var(--code-dim);
+        font-size: 11px;
+        user-select: none;
+        border-right: 1px solid transparent;
+      }
+      .code-line .src { white-space: pre; }
+      .kw { color: #c4b5fd; }
       .fn { color: #7dd3fc; }
       .str { color: #86efac; }
       .num { color: #fbbf24; }
-      .cm { color: #7c8aa5; }
+      .cm { color: #71717a; font-style: italic; }
+      .tag { color: #f9a8d4; }
+      .live-token { background: rgba(251, 191, 36, 0.14); border-bottom: 1px dashed #fbbf24; padding: 0 1px; }
 
-      .footer { margin-top: 22px; color: var(--quiet); font-size: 0.86rem; }
-      .footer a { color: var(--blue-strong); text-decoration: none; }
-
-      @media (max-width: 1080px) {
-        .playground { grid-template-columns: 1fr; }
-        .left { position: static; }
-        .mount-row { grid-template-columns: 1fr; }
+      /* ---------- Footer ---------- */
+      .footer {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 16px;
+        align-items: end;
+        margin-top: 32px;
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
       }
+      .footer-meta {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--quiet);
+        line-height: 1.7;
+      }
+      .footer-meta a { color: var(--ink-soft); border-bottom: 1px solid var(--line-strong); }
+      .footer-meta a:hover { color: var(--accent); border-color: var(--accent); }
+      .footer-meta .row { display: flex; flex-wrap: wrap; gap: 14px; }
+      .footer-meta .row span { display: inline-flex; align-items: center; gap: 6px; }
+      .footer-meta .k { color: var(--quiet); }
+      .footer-mark {
+        font-family: var(--font-display);
+        font-style: italic;
+        font-size: 13px;
+        color: var(--quiet);
+      }
+
       @media (max-width: 720px) {
-        .topbar { flex-wrap: wrap; gap: 10px; padding: 14px 18px; }
-        .nav { order: 3; width: 100%; overflow-x: auto; }
-        .field-row, .field-row-3 { grid-template-columns: 1fr; }
+        .topbar { gap: 12px; padding: 0 16px; height: 52px; flex-wrap: nowrap; }
+        .nav { gap: 0; }
+        .nav a { padding: 6px 8px; font-size: 12.5px; }
+        .top-actions .top-meta { display: none; }
+        .shell { padding: 20px 14px 60px; }
+        .hero { grid-template-columns: 1fr; gap: 16px; }
+        .hero-chips { order: 3; }
+        .field-row { grid-template-columns: 1fr; }
+        .config-actions { grid-template-columns: 1fr; }
+        .config-actions .btn.full { grid-column: auto; }
+        .footer { grid-template-columns: 1fr; }
       }
     </style>
   </head>
   <body>
-    <header class="topbar">
-      <a class="brand" href="./index.html">
-        <span class="brand-mark">O</span>
+    <header class="topbar" role="banner">
+      <a class="brand" href="./index.html" aria-label="OpenCheckout home">
+        <span class="brand-mark" aria-hidden="true">OC</span>
         <span>OpenCheckout</span>
       </a>
       <nav class="nav" aria-label="Primary">
-        <a href="./index.html">가이드</a>
-        <a href="https://github.com/today-zh-learned/opencheckout/blob/main/spec/openapi.yaml">API &amp; SDK</a>
-        <a href="./sandbox.html" aria-current="page">샌드박스</a>
-        <a href="https://github.com/today-zh-learned/opencheckout/blob/main/docs/adr/README.md">설계 문서</a>
+        <a href="./index.html">Overview</a>
+        <a href="https://github.com/today-zh-learned/opencheckout/blob/main/spec/openapi.yaml">API</a>
+        <a href="./sandbox.html" aria-current="page">Sandbox</a>
+        <a href="https://github.com/today-zh-learned/opencheckout/blob/main/docs/adr/README.md">Design</a>
       </nav>
       <div class="top-actions">
-        <a class="button secondary" href="https://github.com/today-zh-learned/opencheckout">GitHub</a>
+        <span class="top-meta" id="top-build">build · loading…</span>
+        <a class="btn secondary sm" href="https://github.com/today-zh-learned/opencheckout">GitHub</a>
       </div>
     </header>
 
-    <main class="shell">
-      <section class="hero">
-        <p class="eyebrow"><span class="pulse"></span> Live SDK Sandbox</p>
-        <h1>한국 D2C 역직구 체크아웃, 18줄.</h1>
-        <p class="lead">
-          주소·배송·결제·약관 4개 위젯을 한 페이지에서 직접 시연합니다. 좌측에서
-          옵션을 바꾸면 우측 4개의 마운트가 즉시 반응하고, 위젯이 발행하는 모든
-          이벤트는 좌측 로그에 그대로 쌓입니다. 키 없이 동작하며, 표시된 코드를
-          그대로 복사해 자기 사이트에 붙이면 됩니다.
-        </p>
+    <main class="shell" role="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div>
+          <p class="hero-meta">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span>Live SDK Sandbox · v1.0</span>
+          </p>
+          <h1 id="hero-title">
+            네 개의 마운트, <em>한 줄의 약속</em>.<br />
+            체크아웃은 더 이상 조립이 아닙니다.
+          </h1>
+          <p class="lead">
+            주소·배송·결제·약관 — 네 위젯이 한 페이지에서 같은 세션을 공유합니다.
+            좌측 설정을 바꾸면 우측 마운트가 즉시 반응하고, 모든 이벤트는
+            그 자리에서 흐릅니다. 키 없이 동작하며, 보이는 코드 그대로
+            붙여넣으면 끝입니다.
+          </p>
+        </div>
+        <div class="hero-chips" aria-label="Sandbox metrics">
+          <span class="chip"><strong>6.83 KB</strong><span class="sep">·</span>gzipped</span>
+          <span class="chip">api · <strong>pk_test_sandbox_demo001</strong></span>
+          <span class="chip">0 keys required</span>
+        </div>
       </section>
 
       <div id="load-error" class="banner" role="alert">
@@ -372,24 +800,27 @@
         <aside class="left">
           <form class="panel" id="config-form" aria-label="Session configuration">
             <div class="panel-head">
-              <h2 class="panel-title">세션 설정</h2>
-              <span class="panel-sub">CheckoutWidgets</span>
+              <h2 class="panel-title">Session</h2>
+              <span class="panel-meta">CheckoutWidgets</span>
             </div>
             <div class="config">
               <div class="field">
-                <label for="publishableKey">publishableKey <span class="chip">테스트 키 자동 주입</span></label>
-                <input id="publishableKey" name="publishableKey" value="pk_test_sandbox_demo001" readonly />
+                <label for="publishableKey">
+                  <span>publishableKey</span>
+                  <span class="pill">test · auto</span>
+                </label>
+                <input id="publishableKey" name="publishableKey" value="pk_test_sandbox_demo001" readonly aria-readonly="true" />
               </div>
               <div class="field">
-                <label for="customerKey">customerKey</label>
-                <div style="display:flex; gap:6px;">
-                  <input id="customerKey" name="customerKey" value="ANONYMOUS" autocomplete="off" style="flex:1;" />
-                  <button class="button secondary" type="button" id="uuid-btn" title="UUID 생성">UUID</button>
+                <label for="customerKey"><span>customerKey</span></label>
+                <div class="field-inline">
+                  <input id="customerKey" name="customerKey" value="ANONYMOUS" autocomplete="off" />
+                  <button class="btn secondary sm" type="button" id="uuid-btn" title="Generate UUID v4">UUID</button>
                 </div>
               </div>
               <div class="field-row">
                 <div class="field">
-                  <label for="locale">locale</label>
+                  <label for="locale"><span>locale</span></label>
                   <select id="locale" name="locale">
                     <option value="ko" selected>ko</option>
                     <option value="en">en</option>
@@ -398,7 +829,7 @@
                   </select>
                 </div>
                 <div class="field">
-                  <label for="buyerCountry">buyerCountry</label>
+                  <label for="buyerCountry"><span>buyerCountry</span></label>
                   <select id="buyerCountry" name="buyerCountry">
                     <option value="KR" selected>KR</option>
                     <option value="US">US</option>
@@ -410,11 +841,11 @@
               </div>
               <div class="field-row">
                 <div class="field">
-                  <label for="amount">amount</label>
+                  <label for="amount"><span>amount</span></label>
                   <input id="amount" name="amount" type="number" min="0" step="100" value="49900" />
                 </div>
                 <div class="field">
-                  <label for="currency">currency</label>
+                  <label for="currency"><span>currency</span></label>
                   <select id="currency" name="currency">
                     <option value="KRW" selected>KRW</option>
                     <option value="USD">USD</option>
@@ -423,25 +854,25 @@
                 </div>
               </div>
               <div class="field">
-                <label for="orderId">orderId</label>
+                <label for="orderId"><span>orderId</span></label>
                 <input id="orderId" name="orderId" value="o_sandbox_0001" autocomplete="off" />
               </div>
               <div class="field">
-                <label for="orderName">orderName</label>
+                <label for="orderName"><span>orderName</span></label>
                 <input id="orderName" name="orderName" value="Glow Serum" autocomplete="off" />
               </div>
             </div>
             <div class="config-actions">
-              <button class="button" type="submit" id="mount-btn">전체 마운트</button>
-              <button class="button secondary" type="button" id="unmount-btn">언마운트</button>
-              <button class="button ghost" type="button" id="clear-log-btn">로그 지우기</button>
+              <button class="btn accent full" type="submit" id="mount-btn">Mount all widgets</button>
+              <button class="btn secondary" type="button" id="remount-btn">Remount</button>
+              <button class="btn ghost" type="button" id="unmount-btn">Unmount</button>
             </div>
           </form>
 
           <article class="panel" aria-label="Live session state">
             <div class="panel-head">
-              <h2 class="panel-title">세션 상태</h2>
-              <span class="panel-sub" id="session-status">unmounted</span>
+              <h2 class="panel-title">Session state</h2>
+              <span class="panel-meta" id="session-status">unmounted</span>
             </div>
             <div class="state-card" id="state-card">
               <div class="state-row" data-key="orderId"><span class="state-key">orderId</span><span class="state-val muted">—</span></div>
@@ -457,67 +888,115 @@
 
           <article class="panel" aria-label="Event log">
             <div class="panel-head">
-              <h2 class="panel-title">이벤트 로그</h2>
-              <span class="panel-sub" id="log-count">0 events</span>
+              <h2 class="panel-title">Event log</h2>
+              <span class="panel-meta" id="log-count">0 events</span>
+            </div>
+            <div class="log-toolbar">
+              <input class="log-search" id="log-search" type="search" placeholder="filter by type or payload…" aria-label="Filter event log" />
+              <button class="btn ghost sm" type="button" id="clear-log-btn">Clear</button>
             </div>
             <div class="log" id="event-log" role="log" aria-live="polite">
-              <div class="log-empty">위젯이 발행하는 모든 이벤트가 여기에 쌓입니다.</div>
+              <div class="log-empty">
+                <strong>Awaiting widget activity</strong>
+                Mount widgets, then events flow here in real time.
+              </div>
             </div>
           </article>
         </aside>
 
-        <!-- RIGHT: 4 mount targets -->
+        <!-- RIGHT: 4 mount targets + actions + code -->
         <section class="stage" aria-label="Live widget mounts">
           <div class="mount-row">
-            <article class="mount-card" id="card-address">
-              <div class="mount-head"><h3>주소 위젯</h3><span class="mount-tag">#oc-address</span></div>
-              <div class="mount-target" id="oc-address">
-                <p class="mount-empty">전체 마운트를 누르면 위젯이 여기에 렌더링됩니다.</p>
+            <article class="mount-card" id="card-address" data-mount="address">
+              <div class="mount-head">
+                <span class="mount-num" aria-hidden="true">1</span>
+                <h3>주소</h3>
+                <span class="mount-tag">#oc-address</span>
+                <span class="mount-status"><span class="dot" aria-hidden="true"></span><span>idle</span></span>
+              </div>
+              <div class="mount-target" id="oc-address" role="region" aria-label="Address widget mount">
+                <div class="mount-empty">
+                  <div class="skeleton w-5-6"></div>
+                  <div class="skeleton w-3-4"></div>
+                  <div class="skeleton w-1-2"></div>
+                  <p>도로명·해외 주소 입력 필드가 렌더링됩니다.</p>
+                </div>
               </div>
             </article>
-            <article class="mount-card" id="card-shipping">
-              <div class="mount-head"><h3>배송 위젯</h3><span class="mount-tag">#oc-shipping</span></div>
-              <div class="mount-target" id="oc-shipping">
-                <p class="mount-empty">금액·국가에 따라 배송 옵션이 자동 갱신됩니다.</p>
+            <article class="mount-card" id="card-shipping" data-mount="shipping">
+              <div class="mount-head">
+                <span class="mount-num" aria-hidden="true">2</span>
+                <h3>배송</h3>
+                <span class="mount-tag">#oc-shipping</span>
+                <span class="mount-status"><span class="dot" aria-hidden="true"></span><span>idle</span></span>
+              </div>
+              <div class="mount-target" id="oc-shipping" role="region" aria-label="Shipping widget mount">
+                <div class="mount-empty">
+                  <div class="skeleton w-5-6"></div>
+                  <div class="skeleton w-3-4"></div>
+                  <p>금액·국가에 따라 배송 옵션이 자동 갱신됩니다.</p>
+                </div>
               </div>
             </article>
           </div>
           <div class="mount-row">
-            <article class="mount-card" id="card-payment">
-              <div class="mount-head"><h3>결제 위젯</h3><span class="mount-tag">#oc-payment</span></div>
-              <div class="mount-target" id="oc-payment">
-                <p class="mount-empty">카드·계좌이체·해외결제 등 결제수단 타일이 표시됩니다.</p>
+            <article class="mount-card" id="card-payment" data-mount="payment">
+              <div class="mount-head">
+                <span class="mount-num" aria-hidden="true">3</span>
+                <h3>결제</h3>
+                <span class="mount-tag">#oc-payment</span>
+                <span class="mount-status"><span class="dot" aria-hidden="true"></span><span>idle</span></span>
+              </div>
+              <div class="mount-target" id="oc-payment" role="region" aria-label="Payment widget mount">
+                <div class="mount-empty">
+                  <div class="skeleton w-5-6"></div>
+                  <div class="skeleton w-3-4"></div>
+                  <div class="skeleton w-1-2"></div>
+                  <p>카드·계좌이체·해외결제 타일이 표시됩니다.</p>
+                </div>
               </div>
             </article>
-            <article class="mount-card" id="card-agreement">
-              <div class="mount-head"><h3>약관 위젯</h3><span class="mount-tag">#oc-agreement</span></div>
-              <div class="mount-target" id="oc-agreement">
-                <p class="mount-empty">약관 동의 체크박스가 렌더링됩니다.</p>
+            <article class="mount-card" id="card-agreement" data-mount="agreement">
+              <div class="mount-head">
+                <span class="mount-num" aria-hidden="true">4</span>
+                <h3>약관</h3>
+                <span class="mount-tag">#oc-agreement</span>
+                <span class="mount-status"><span class="dot" aria-hidden="true"></span><span>idle</span></span>
+              </div>
+              <div class="mount-target" id="oc-agreement" role="region" aria-label="Agreement widget mount">
+                <div class="mount-empty">
+                  <div class="skeleton w-3-4"></div>
+                  <div class="skeleton w-1-2"></div>
+                  <p>약관 동의 체크박스가 렌더링됩니다.</p>
+                </div>
               </div>
             </article>
           </div>
 
-          <div class="stage-actions" role="toolbar" aria-label="Run flow controls">
-            <button class="button" type="button" id="run-flow-btn">전체 흐름 자동 실행</button>
-            <button class="button danger" type="button" id="pan-test-btn">PAN 가드 시뮬레이션</button>
-            <button class="button secondary" type="button" id="request-payment-btn">requestPayment 호출</button>
+          <div class="stage-actions" role="toolbar" aria-label="Stage controls">
+            <span class="stage-actions-label">Actions</span>
+            <button class="btn" type="button" id="run-flow-btn">Run full flow</button>
+            <button class="btn secondary" type="button" id="request-payment-btn">requestPayment</button>
+            <button class="btn secondary" type="button" id="reset-session-btn">Reset session</button>
+            <button class="btn danger" type="button" id="pan-test-btn">PAN guard test</button>
           </div>
 
           <article class="panel code-panel" aria-label="Integration code">
             <div class="panel-head">
-              <h2 class="panel-title">통합 코드</h2>
-              <span class="panel-sub">현재 설정 반영</span>
+              <h2 class="panel-title">Integration code</h2>
+              <span class="panel-meta">reflects current settings</span>
             </div>
             <div class="tabs" role="tablist" aria-label="Code variants">
-              <button class="tab" type="button" role="tab" aria-selected="true" data-tab="all">All</button>
-              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="address">Address</button>
-              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="shipping">Shipping</button>
-              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="payment">Payment</button>
-              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="agreement">Agreement</button>
-              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="react">React</button>
-              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="curl">cURL</button>
+              <button class="tab" type="button" role="tab" aria-selected="true" data-tab="all">checkout.html</button>
+              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="address">address.ts</button>
+              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="shipping">shipping.ts</button>
+              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="payment">payment.ts</button>
+              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="agreement">agreement.ts</button>
+              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="react">Checkout.tsx</button>
+              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="curl">widget-token.sh</button>
             </div>
             <div class="code-head">
+              <span class="traffic" aria-hidden="true"><span></span><span></span><span></span></span>
               <span class="code-name" id="code-name">checkout.html</span>
               <span class="code-meta" id="code-meta">17 lines</span>
               <button class="copy" type="button" id="copy-btn">Copy</button>
@@ -535,11 +1014,18 @@
         </section>
       </section>
 
-      <p class="footer">
-        위젯 소스: <code>packages/widget-vanilla</code> · 번들:
-        <a href="./assets/opencheckout-widget.js">assets/opencheckout-widget.js</a> ·
-        <a href="https://github.com/today-zh-learned/opencheckout/tree/main/packages/widget-vanilla">GitHub</a>
-      </p>
+      <footer class="footer" role="contentinfo">
+        <div class="footer-meta">
+          <div class="row">
+            <span><span class="k">version</span> <span id="ft-version">v1.0.0</span></span>
+            <span><span class="k">bundle</span> <a href="./assets/opencheckout-widget.js">opencheckout-widget.js</a></span>
+            <span><span class="k">source</span> <a href="https://github.com/today-zh-learned/opencheckout/tree/main/packages/widget-vanilla">packages/widget-vanilla</a></span>
+            <span><span class="k">license</span> Apache-2.0</span>
+            <span><span class="k">built</span> <span id="ft-built">—</span></span>
+          </div>
+        </div>
+        <div class="footer-mark">— made with restraint.</div>
+      </footer>
     </main>
 
     <script type="importmap">
@@ -557,6 +1043,10 @@
       const loadErrorEl = $("load-error");
       const codeNameEl = $("code-name");
       const codeMetaEl = $("code-meta");
+      const topBuildEl = $("top-build");
+      const ftBuilt = $("ft-built");
+      const ftVersion = $("ft-version");
+      const logSearchEl = $("log-search");
 
       const TAB_FILES = {
         all: "checkout.html",
@@ -570,16 +1060,24 @@
 
       let sdk = null;
       let widgets = null;
-      let mounted = { address: null, shipping: null, payment: null, agreement: null };
+      const mounted = { address: null, shipping: null, payment: null, agreement: null };
       let logCount = 0;
+      const allLogEntries = [];
       const sessionState = {
         orderId: null, amount: null, country: null,
         address: null, shipping: null, payment: null,
         agreement: false, status: "idle",
       };
 
+      // Fill build timestamp (page render time as a proxy)
+      const now = new Date();
+      const ts = now.toISOString().replace("T", " ").slice(0, 16) + " UTC";
+      ftBuilt.textContent = ts;
+      topBuildEl.textContent = `build · ${ts}`;
+
       try {
         sdk = await import("./assets/opencheckout-widget.js");
+        if (sdk.WIDGET_VERSION) ftVersion.textContent = `v${sdk.WIDGET_VERSION}`;
         log("session", "sdk:ready", { version: sdk.WIDGET_VERSION });
       } catch (err) {
         loadErrorEl.classList.add("visible");
@@ -602,10 +1100,23 @@
 
       function renderEmpty(target, msg) {
         target.innerHTML = "";
-        const p = document.createElement("p");
-        p.className = "mount-empty";
-        p.textContent = msg;
-        target.append(p);
+        const wrap = document.createElement("div");
+        wrap.className = "mount-empty";
+        wrap.innerHTML = `
+          <div class="skeleton w-5-6"></div>
+          <div class="skeleton w-3-4"></div>
+          <div class="skeleton w-1-2"></div>
+          <p>${escapeHtml(msg)}</p>
+        `;
+        target.append(wrap);
+      }
+
+      function setMountedFlag(name, on) {
+        const card = $(`card-${name}`);
+        if (!card) return;
+        card.classList.toggle("is-mounted", !!on);
+        const status = card.querySelector(".mount-status span:last-child");
+        if (status) status.textContent = on ? "mounted" : "idle";
       }
 
       function unmountAll() {
@@ -614,11 +1125,19 @@
             try { mounted[k].destroy(); } catch {}
             mounted[k] = null;
           }
-          renderEmpty($(`oc-${k}`), `${k} 위젯 마운트 대기 중`);
+          renderEmpty($(`oc-${k}`), `${k} widget mount pending`);
+          setMountedFlag(k, false);
         }
         widgets = null;
         sessionStatus.textContent = "unmounted";
+        sessionStatus.className = "panel-meta";
         updateState({ status: "idle", address: null, shipping: null, payment: null, agreement: false });
+      }
+
+      function resetSession() {
+        unmountAll();
+        updateState({ orderId: null, amount: null, country: null, status: "idle" });
+        log("session", "session:reset", {});
       }
 
       async function mountAll(event) {
@@ -645,6 +1164,11 @@
           mounted.payment = widgets.renderPayment({ selector: "#oc-payment" });
           mounted.agreement = widgets.renderAgreement({ selector: "#oc-agreement" });
 
+          for (const k of Object.keys(mounted)) {
+            setMountedFlag(k, true);
+            pulseCard(k);
+          }
+
           mounted.address.on("addressSelect", (sel) => {
             updateState({ address: `${sel.country} ${sel.zipCode || ""}`.trim() });
             pulseCard("address");
@@ -667,10 +1191,12 @@
           });
 
           sessionStatus.textContent = "mounted";
+          sessionStatus.className = "panel-meta status-mounted";
         } catch (err) {
           log("error", "mount:failed", { message: String(err && err.message) });
           updateState({ status: "error" });
           sessionStatus.textContent = "error";
+          sessionStatus.className = "panel-meta status-error";
         }
       }
 
@@ -678,7 +1204,6 @@
         const el = $(`card-${name}`);
         if (!el) return;
         el.classList.remove("pulse-now");
-        // force reflow
         void el.offsetWidth;
         el.classList.add("pulse-now");
       }
@@ -691,11 +1216,12 @@
           const valEl = row.querySelector(".state-val");
           let display;
           if (v === null || v === undefined || v === "") display = "—";
-          else if (typeof v === "boolean") display = v ? "✓" : "—";
+          else if (typeof v === "boolean") display = v ? "✓ agreed" : "—";
           else display = String(v);
           valEl.textContent = display;
           valEl.classList.toggle("muted", display === "—");
-          valEl.classList.toggle("ok", k === "agreement" && v === true);
+          valEl.classList.toggle("ok", (k === "agreement" && v === true) || (k === "status" && (v === "mounted" || v === "redirected")));
+          valEl.classList.toggle("err", k === "status" && (v === "error" || v === "blocked"));
           row.classList.remove("changed");
           void row.offsetWidth;
           row.classList.add("changed");
@@ -705,19 +1231,27 @@
       function log(kind, type, payload) {
         const empty = logEl.querySelector(".log-empty");
         if (empty) empty.remove();
-        const row = document.createElement("div");
-        row.className = "log-entry";
         const time = new Date().toLocaleTimeString([], { hour12: false });
+        const row = document.createElement("div");
+        row.className = `log-entry ${kind}`;
+        const payloadStr = JSON.stringify(payload);
         row.innerHTML = `
+          <span class="bar" aria-hidden="true"></span>
           <span class="log-time">${time}</span>
           <span class="log-type ${kind}">${escapeHtml(type)}</span>
-          <span class="log-body">${escapeHtml(JSON.stringify(payload))}</span>
+          <span class="log-body">${escapeHtml(payloadStr)}</span>
         `;
+        row.dataset.searchable = (type + " " + payloadStr).toLowerCase();
         logEl.append(row);
+        allLogEntries.push(row);
+        // apply current filter
+        const q = (logSearchEl.value || "").toLowerCase();
+        if (q && !row.dataset.searchable.includes(q)) row.style.display = "none";
         logEl.scrollTop = logEl.scrollHeight;
         logCount += 1;
-        logCountEl.textContent = `${logCount} events`;
+        logCountEl.textContent = `${logCount} event${logCount === 1 ? "" : "s"}`;
       }
+
       function escapeHtml(v) {
         return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       }
@@ -757,7 +1291,7 @@
         ].join("\n");
 
         const single = (which) => [
-          `// 사전 준비 — 같은 widgets 객체 재사용`,
+          `// shared widgets instance — call once per page`,
           `widgets.setAmount({ value: ${c.amount}, currency: ${json(c.currency)} });`,
           `widgets.setOrder({ id: ${json(c.orderId)}, name: ${json(c.orderName)}, buyerCountry: ${json(c.buyerCountry)} });`,
           ``,
@@ -790,26 +1324,26 @@
         ].join("\n");
 
         const curl = [
-          `# (Optional) Gateway에서 위젯 토큰 받기 — 머천트 서버에서`,
+          `# (Optional) Issue a widget token from your merchant server`,
           `curl -X POST https://api.opencheckout.dev/v1/widget/tokens \\`,
           `  -H "Authorization: Bearer $OPENCHECKOUT_SECRET" \\`,
           `  -H "Content-Type: application/json" \\`,
           `  -d '{ "publishableKey": ${json(c.publishableKey)}, "tenantId": "demo" }'`,
         ].join("\n");
 
-        $("code-all").innerHTML = highlight(all);
-        $("code-address").innerHTML = highlight(single("address"));
-        $("code-shipping").innerHTML = highlight(single("shipping"));
-        $("code-payment").innerHTML = highlight(single("payment"));
-        $("code-agreement").innerHTML = highlight(single("agreement"));
-        $("code-react").innerHTML = highlight(react);
-        $("code-curl").innerHTML = highlight(curl);
+        $("code-all").innerHTML = renderLines(all, c);
+        $("code-address").innerHTML = renderLines(single("address"), c);
+        $("code-shipping").innerHTML = renderLines(single("shipping"), c);
+        $("code-payment").innerHTML = renderLines(single("payment"), c);
+        $("code-agreement").innerHTML = renderLines(single("agreement"), c);
+        $("code-react").innerHTML = renderLines(react, c);
+        $("code-curl").innerHTML = renderLines(curl, c);
 
-        // Update active tab meta
         const active = document.querySelector('[data-tab][aria-selected="true"]')?.dataset.tab || "all";
         const codeText = $(`code-${active}`).textContent || "";
         codeNameEl.textContent = TAB_FILES[active] || "checkout.html";
-        codeMetaEl.textContent = `${codeText.split("\n").length} lines`;
+        const lineCount = codeText.split("\n").length;
+        codeMetaEl.textContent = `${lineCount} line${lineCount === 1 ? "" : "s"}`;
       }
 
       function eventNameFor(which) {
@@ -821,10 +1355,29 @@
         })[which] || "change";
       }
 
+      function renderLines(src, c) {
+        const lines = src.split("\n");
+        const liveTokens = new Set([
+          c.publishableKey, c.customerKey, c.orderId, c.orderName,
+          c.locale, c.currency, c.buyerCountry, String(c.amount),
+        ].filter(Boolean));
+        return lines.map((line, i) => {
+          const ln = String(i + 1).padStart(2, " ");
+          let html = highlight(line);
+          for (const tok of liveTokens) {
+            if (!tok || tok.length < 2) continue;
+            const escaped = escapeHtml(tok).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            html = html.replace(new RegExp(`(${escaped})`, "g"), '<span class="live-token">$1</span>');
+          }
+          return `<div class="code-line"><span class="ln">${ln}</span><span class="src">${html || "&nbsp;"}</span></div>`;
+        }).join("");
+      }
+
       function highlight(src) {
         return escapeHtml(src)
           .replace(/(\/\/.*$|#.*$)/gm, '<span class="cm">$1</span>')
           .replace(/(&quot;[^&]*?&quot;|`[^`]*?`)/g, '<span class="str">$1</span>')
+          .replace(/&lt;\/?(div|button|script)[^&]*?&gt;/g, '<span class="tag">$&</span>')
           .replace(/\b(import|from|const|let|var|function|return|async|await|export|if|else|new|useEffect|useRef|type|interface|then)\b/g, '<span class="kw">$1</span>')
           .replace(/\b(\d+)\b/g, '<span class="num">$1</span>');
       }
@@ -839,6 +1392,15 @@
           for (const p of panes) p.hidden = p.getAttribute("data-pane") !== target;
           renderCode();
         });
+        tab.addEventListener("keydown", (ev) => {
+          if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
+          ev.preventDefault();
+          const list = Array.from(tabs);
+          const i = list.indexOf(tab);
+          const next = list[(i + (ev.key === "ArrowRight" ? 1 : -1) + list.length) % list.length];
+          next.click();
+          next.focus();
+        });
       }
 
       // ---------- Auto-run flow ----------
@@ -848,7 +1410,6 @@
         await sleep(220);
         widgets.setAmount({ value: readConfig().amount, currency: readConfig().currency });
         await sleep(180);
-        // synthesize agreement check by clicking the rendered checkbox if present
         const agreeRoot = $("oc-agreement");
         const checkbox = agreeRoot?.querySelector ? agreeRoot.querySelector("input[type=checkbox]") : null;
         if (checkbox && !checkbox.checked) { checkbox.click(); }
@@ -888,10 +1449,19 @@
       form.addEventListener("input", renderCode);
       form.addEventListener("change", renderCode);
       $("unmount-btn").addEventListener("click", unmountAll);
+      $("remount-btn").addEventListener("click", () => mountAll());
+      $("reset-session-btn").addEventListener("click", resetSession);
       $("clear-log-btn").addEventListener("click", () => {
-        logEl.innerHTML = '<div class="log-empty">위젯이 발행하는 모든 이벤트가 여기에 쌓입니다.</div>';
+        logEl.innerHTML = '<div class="log-empty"><strong>Log cleared</strong>New events will appear here.</div>';
+        allLogEntries.length = 0;
         logCount = 0;
         logCountEl.textContent = "0 events";
+      });
+      logSearchEl.addEventListener("input", () => {
+        const q = logSearchEl.value.trim().toLowerCase();
+        for (const row of allLogEntries) {
+          row.style.display = !q || row.dataset.searchable.includes(q) ? "" : "none";
+        }
       });
       $("uuid-btn").addEventListener("click", () => {
         const ck = $("customerKey");
@@ -901,7 +1471,7 @@
       $("run-flow-btn").addEventListener("click", runFullFlow);
       $("pan-test-btn").addEventListener("click", panTest);
       $("request-payment-btn").addEventListener("click", async () => {
-        if (!widgets) { log("error", "requestPayment:no-session", { hint: "전체 마운트를 먼저 누르세요" }); return; }
+        if (!widgets) { log("error", "requestPayment:no-session", { hint: "마운트를 먼저 실행하세요" }); return; }
         try {
           await widgets.requestPayment({
             successUrl: location.origin + "/success",
@@ -915,13 +1485,15 @@
       $("copy-btn").addEventListener("click", async () => {
         const active = document.querySelector(".code-pane:not([hidden]) code");
         if (!active) return;
+        const btn = $("copy-btn");
         try {
           await navigator.clipboard.writeText(active.textContent || "");
-          $("copy-btn").textContent = "Copied";
+          btn.textContent = "Copied";
+          btn.classList.add("success");
         } catch {
-          $("copy-btn").textContent = "Failed";
+          btn.textContent = "Failed";
         }
-        setTimeout(() => ($("copy-btn").textContent = "Copy"), 1200);
+        setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("success"); }, 1400);
       });
 
       renderCode();
