@@ -15,11 +15,22 @@ export class EventBus<TMap extends Record<string, unknown>> {
     };
   }
 
+  off<K extends keyof TMap>(type: K, listener: EventBusListener<TMap[K]>): boolean {
+    const set = this.listeners.get(type);
+    if (!set) return false;
+    return set.delete(listener as EventBusListener<unknown>);
+  }
+
   emit<K extends keyof TMap>(type: K, payload: TMap[K]): void {
     const set = this.listeners.get(type);
     if (!set) return;
-    for (const listener of set) {
-      (listener as EventBusListener<TMap[K]>)(payload);
+    // Snapshot before iteration so subscribe-during-emit doesn't affect this tick
+    for (const listener of [...set]) {
+      try {
+        (listener as EventBusListener<TMap[K]>)(payload);
+      } catch (err) {
+        console.error("[OpenCheckout][EventBus]", type, err);
+      }
     }
   }
 

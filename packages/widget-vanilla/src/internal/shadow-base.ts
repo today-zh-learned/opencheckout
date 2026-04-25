@@ -1,6 +1,7 @@
 import { assertPanFree } from "./pan-guard.js";
 import { type ComponentChild, h, render } from "./preact-runtime.js";
 import { WIDGET_CSS } from "./styles.js";
+import { OpenCheckoutValidationError } from "./validate.js";
 
 export type ShadowRenderFn = () => ComponentChild;
 
@@ -37,6 +38,18 @@ export class OpenCheckoutShadowElement extends HTMLElement {
   }
 }
 
+/**
+ * Throws OpenCheckoutValidationError if `host` already contains a child element
+ * matching `tag`. Call before appending a widget element to enforce single-mount.
+ */
+export function assertNotAlreadyMounted(host: Element, tag: string): void {
+  if (host.querySelector(tag) !== null) {
+    throw new OpenCheckoutValidationError(
+      `${tag} is already mounted at this selector — call .destroy() first or pick a different selector`,
+    );
+  }
+}
+
 export function defineOnce(tagName: string, ctor: CustomElementConstructor): void {
   if (typeof customElements === "undefined") {
     throw new TypeError("customElements is required to register OpenCheckout widgets");
@@ -44,6 +57,21 @@ export function defineOnce(tagName: string, ctor: CustomElementConstructor): voi
   if (!customElements.get(tagName)) {
     customElements.define(tagName, ctor);
   }
+}
+
+/**
+ * Returns a `mountInto(host)` helper that performs idempotency check then appends
+ * `el` to `host`. Callers should migrate from bare `host.append(el)` to this helper.
+ * Existing callers using `host.append(el)` directly retain pre-existing
+ * append-second-instance behaviour until they migrate.
+ */
+export function makeMountHelper(tag: string, el: Element): { mountInto(host: Element): void } {
+  return {
+    mountInto(host: Element): void {
+      assertNotAlreadyMounted(host, tag);
+      host.append(el);
+    },
+  };
 }
 
 export function resolveTarget(target: Element | string): Element {

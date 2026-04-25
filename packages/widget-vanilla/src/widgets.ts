@@ -7,6 +7,7 @@ import {
   validateCustomerKey,
   validateLocale,
   validateMoney,
+  validateRedirectUrl,
 } from "./internal/validate.js";
 import { type AddressWidget, mountAddressWidget } from "./widgets/address-widget.js";
 import { type AgreementWidget, mountAgreementWidget } from "./widgets/agreement-widget.js";
@@ -44,6 +45,8 @@ export type RequestPaymentOptions = {
   readonly failUrl: string;
   readonly customerEmail?: string;
 };
+
+let previewWarningEmitted = false;
 
 export type CheckoutWidgets = {
   setAmount(amount: Money): void;
@@ -165,15 +168,26 @@ export function createWidgets(init: {
           "requestPayment requires a window; call from the browser",
         );
       }
+      // Scan redirect URLs for embedded PANs before parsing/redirecting.
+      assertPanFree(p.successUrl);
+      assertPanFree(p.failUrl);
+      const successUrl = validateRedirectUrl("successUrl", p.successUrl);
+      validateRedirectUrl("failUrl", p.failUrl);
+      if (!previewWarningEmitted) {
+        previewWarningEmitted = true;
+        // eslint-disable-next-line no-console
+        console.warn(
+          "[OpenCheckout] requestPayment is in PREVIEW — no real PG call. paymentKey is mock_*.",
+        );
+      }
       const order = state.order;
       const amount = state.amount;
       if (!amount) throw new OpenCheckoutValidationError("amount missing");
-      const mockPaymentKey = `mock_${order.id}_${Date.now()}`;
-      const separator = p.successUrl.includes("?") ? "&" : "?";
-      const target = `${p.successUrl}${separator}paymentKey=${encodeURIComponent(
-        mockPaymentKey,
-      )}&orderId=${encodeURIComponent(order.id)}&amount=${amount.value}`;
-      window.location.assign(target);
+      const mockPaymentKey = `mock_preview_${order.id}_${Date.now()}`;
+      successUrl.searchParams.set("paymentKey", mockPaymentKey);
+      successUrl.searchParams.set("orderId", order.id);
+      successUrl.searchParams.set("amount", String(amount.value));
+      window.location.assign(successUrl.toString());
     },
     destroy(): void {
       for (const w of mounted) {

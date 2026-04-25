@@ -664,6 +664,22 @@
       .copy:hover { background: rgba(255, 255, 255, 0.08); border-color: #52525b; }
       .copy.success { color: #6ee7b7; border-color: #065f46; }
 
+      /* ---------- Per-block copy buttons ---------- */
+      .code-block { position: relative; }
+      .code-copy-btn {
+        position: absolute; top: 8px; right: 8px;
+        padding: 3px 9px;
+        border: 1px solid rgba(255,255,255,0.12); border-radius: 5px;
+        background: rgba(30,30,32,0.82);
+        color: #a1a1aa;
+        font-family: var(--font-mono); font-size: 11px;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity var(--t-fast) var(--ease-snap), color var(--t-fast) var(--ease-snap);
+      }
+      .code-block:hover .code-copy-btn { opacity: 1; }
+      .code-copy-btn.copied { color: #6ee7b7; }
+
       .code-wrap {
         background: var(--code-bg);
         max-height: 460px;
@@ -1280,7 +1296,7 @@
         </div>
         <div class="hero-chips" aria-label="Sandbox metrics">
           <span class="chip"><strong>6.83 KB</strong><span class="sep">·</span>gzipped</span>
-          <span class="chip">api · <strong>pk_test_sandbox_demo001</strong></span>
+          <span class="chip">api · <strong>pk_test_demokey_DEMOnotProd123</strong></span>
           <span class="chip">0 keys required</span>
         </div>
       </section>
@@ -1304,7 +1320,7 @@
                   <span>publishableKey</span>
                   <span class="pill">test · auto</span>
                 </label>
-                <input id="publishableKey" name="publishableKey" value="pk_test_sandbox_demo001" readonly aria-readonly="true" />
+                <input id="publishableKey" name="publishableKey" value="pk_test_demokey_DEMOnotProd123" readonly aria-readonly="true" />
               </div>
               <div class="field">
                 <label for="customerKey"><span>customerKey</span></label>
@@ -1358,7 +1374,7 @@
               </div>
             </div>
             <div class="config-actions">
-              <button class="btn accent full" type="submit" id="mount-btn">Mount all widgets</button>
+              <button class="btn accent full" type="submit" id="mount-btn">Re-mount with new config</button>
               <button class="btn secondary" type="button" id="remount-btn">Remount</button>
               <button class="btn ghost" type="button" id="unmount-btn">Unmount</button>
             </div>
@@ -1753,13 +1769,13 @@
               <button class="copy" type="button" id="copy-btn">Copy</button>
             </div>
             <div class="code-wrap">
-              <pre class="code-pane" data-pane="all"><code id="code-all"></code></pre>
-              <pre class="code-pane" data-pane="address" hidden><code id="code-address"></code></pre>
-              <pre class="code-pane" data-pane="shipping" hidden><code id="code-shipping"></code></pre>
-              <pre class="code-pane" data-pane="payment" hidden><code id="code-payment"></code></pre>
-              <pre class="code-pane" data-pane="agreement" hidden><code id="code-agreement"></code></pre>
-              <pre class="code-pane" data-pane="react" hidden><code id="code-react"></code></pre>
-              <pre class="code-pane" data-pane="curl" hidden><code id="code-curl"></code></pre>
+              <pre class="code-pane code-block" data-pane="all" data-copy="code-all"><code id="code-all"></code><button class="code-copy-btn" aria-label="Copy code">Copy</button></pre>
+              <pre class="code-pane code-block" data-pane="address" hidden data-copy="code-address"><code id="code-address"></code><button class="code-copy-btn" aria-label="Copy code">Copy</button></pre>
+              <pre class="code-pane code-block" data-pane="shipping" hidden data-copy="code-shipping"><code id="code-shipping"></code><button class="code-copy-btn" aria-label="Copy code">Copy</button></pre>
+              <pre class="code-pane code-block" data-pane="payment" hidden data-copy="code-payment"><code id="code-payment"></code><button class="code-copy-btn" aria-label="Copy code">Copy</button></pre>
+              <pre class="code-pane code-block" data-pane="agreement" hidden data-copy="code-agreement"><code id="code-agreement"></code><button class="code-copy-btn" aria-label="Copy code">Copy</button></pre>
+              <pre class="code-pane code-block" data-pane="react" hidden data-copy="code-react"><code id="code-react"></code><button class="code-copy-btn" aria-label="Copy code">Copy</button></pre>
+              <pre class="code-pane code-block" data-pane="curl" hidden data-copy="code-curl"><code id="code-curl"></code><button class="code-copy-btn" aria-label="Copy code">Copy</button></pre>
             </div>
           </article>
         </section>
@@ -2089,7 +2105,7 @@
           `<button id="pay">결제하기</button>`,
           ``,
           `<script type="module">`,
-          `  import { OpenCheckout } from "https://cdn.opencheckout.dev/v1";`,
+          `  import { OpenCheckout } from "https://today-zh-learned.github.io/opencheckout/assets/opencheckout-widget.js";`,
           ``,
           `  const oc = await OpenCheckout.load({ publishableKey: ${json(c.publishableKey)} });`,
           `  const widgets = oc.widgets({ customerKey: ${json(c.customerKey)}, locale: ${json(c.locale)} });`,
@@ -2483,9 +2499,33 @@
         setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("success"); }, 1400);
       });
 
+      // ---------- Per-block copy delegation ----------
+      document.addEventListener("click", async (ev) => {
+        const btn = ev.target.closest(".code-copy-btn");
+        if (!btn) return;
+        const block = btn.closest("[data-copy]");
+        if (!block) return;
+        const codeEl = block.querySelector("code");
+        if (!codeEl) return;
+        try {
+          await navigator.clipboard.writeText(codeEl.textContent || "");
+          btn.textContent = "Copied";
+          btn.classList.add("copied");
+        } catch {
+          btn.textContent = "Failed";
+        }
+        setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1200);
+      });
+
       renderCode();
       updateSummaryTotals();
       updateCta();
+
+      // ---------- Auto-mount on SDK ready (D4=A) ----------
+      if (sdk) {
+        log("session", "auto-mount", { trigger: "sdk:ready" });
+        mountAll();
+      }
     </script>
   </body>
 </html>

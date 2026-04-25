@@ -800,6 +800,158 @@ describe("loadCountrySchema — lazy libaddressinput fetch", () => {
   });
 });
 
+describe("PAN guard — bypass vectors hardened in v0.0.1", () => {
+  it("catches dot-separated PAN", () => {
+    expect(() => assertPanFree("4111.1111.1111.1111")).toThrow(OpenCheckoutSecurityError);
+  });
+
+  it("catches slash-separated PAN", () => {
+    expect(() => assertPanFree("4111/1111/1111/1111")).toThrow(OpenCheckoutSecurityError);
+  });
+
+  it("catches NBSP-separated PAN", () => {
+    expect(() => assertPanFree("4111 1111 1111 1111")).toThrow(
+      OpenCheckoutSecurityError,
+    );
+  });
+
+  it("catches newline-separated PAN", () => {
+    expect(() => assertPanFree("4111\n1111\n1111\n1111")).toThrow(OpenCheckoutSecurityError);
+  });
+
+  it("catches full-width digits via NFKC normalize", () => {
+    expect(() => assertPanFree("４１１１１１１１１１１１１１１１")).toThrow(OpenCheckoutSecurityError);
+  });
+
+  it("catches PAN nested inside a Map value", () => {
+    const m = new Map<string, string>([["k", "4111111111111111"]]);
+    expect(() => assertPanFree(m)).toThrow(OpenCheckoutSecurityError);
+  });
+
+  it("catches PAN encoded as ASCII bytes in a Uint8Array", () => {
+    const bytes = new TextEncoder().encode("4111111111111111");
+    expect(() => assertPanFree(bytes)).toThrow(OpenCheckoutSecurityError);
+  });
+
+  it("catches PAN nested inside a Set", () => {
+    const s = new Set<string>(["4111111111111111"]);
+    expect(() => assertPanFree(s)).toThrow(OpenCheckoutSecurityError);
+  });
+
+  it("rejects unsupported typed arrays (Int16Array)", () => {
+    expect(() => assertPanFree(new Int16Array([1, 2, 3]))).toThrow(OpenCheckoutSecurityError);
+  });
+
+  it("treats undefined/null as a no-op", () => {
+    expect(() => assertPanFree(undefined)).not.toThrow();
+    expect(() => assertPanFree(null)).not.toThrow();
+  });
+});
+
+describe("requestPayment — successUrl/failUrl validation", () => {
+  async function readyWidgets() {
+    const oc = await load({ publishableKey: "pk_test_kr01_abc123" });
+    const widgets = oc.widgets({ customerKey: "ANONYMOUS" });
+    widgets.setAmount({ value: 1000, currency: "KRW" });
+    widgets.setOrder({ id: "order_1", name: "Test" });
+    makeTarget("ag-url");
+    const ag = widgets.renderAgreement({ selector: "#ag-url" });
+    const off = ag.on("agreementStatusChange", () => {});
+    const host = document.getElementById("ag-url")?.firstElementChild as HTMLElement;
+    const input = host?.shadowRoot?.querySelector("input[type=checkbox]") as HTMLInputElement;
+    input.checked = true;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    off();
+    return widgets;
+  }
+
+  it("rejects javascript: URL in successUrl", async () => {
+    const widgets = await readyWidgets();
+    await expect(
+      widgets.requestPayment({
+        successUrl: "javascript:alert(1)",
+        failUrl: "https://m.example/fail",
+      }),
+    ).rejects.toBeInstanceOf(OpenCheckoutValidationError);
+  });
+
+  it("rejects http://attacker.com (non-localhost http)", async () => {
+    const widgets = await readyWidgets();
+    await expect(
+      widgets.requestPayment({
+        successUrl: "http://attacker.com/return",
+        failUrl: "https://m.example/fail",
+      }),
+    ).rejects.toBeInstanceOf(OpenCheckoutValidationError);
+  });
+
+  it("rejects successUrl containing a PAN in the query string", async () => {
+    const widgets = await readyWidgets();
+    await expect(
+      widgets.requestPayment({
+        successUrl: "https://example.com/return?paymentKey=4111111111111111",
+        failUrl: "https://m.example/fail",
+      }),
+    ).rejects.toBeInstanceOf(OpenCheckoutSecurityError);
+  });
+
+  it("accepts http://localhost:3000 as a dev carve-out", async () => {
+    const widgets = await readyWidgets();
+    const assignSpy = vi.spyOn(window.location, "assign").mockImplementation(() => {});
+    await widgets.requestPayment({
+      successUrl: "http://localhost:3000/ok",
+      failUrl: "http://localhost:3000/fail",
+    });
+    expect(assignSpy).toHaveBeenCalledOnce();
+    const call = String(assignSpy.mock.calls[0]?.[0]);
+    expect(call).toContain("http://localhost:3000/ok");
+    expect(call).toContain("paymentKey=mock_preview_");
+    assignSpy.mockRestore();
+  });
+});
+
+describe("publishableKey — entropy & length hardening", () => {
+  it("rejects low-entropy random segment (all same character)", async () => {
+    await expect(load({ publishableKey: "pk_live_aaaa_aaaaaa" })).rejects.toBeInstanceOf(
+      OpenCheckoutValidationError,
+    );
+  });
+
+  it("rejects random segment longer than 64 chars", async () => {
+    const random = "a".repeat(65);
+    await expect(load({ publishableKey: `pk_test_kr01_${random}` })).rejects.toBeInstanceOf(
+      OpenCheckoutValidationError,
+    );
+  });
+
+  it("rejects shard segment longer than 32 chars", async () => {
+    const shard = "a".repeat(33);
+    await expect(load({ publishableKey: `pk_test_${shard}_abcdef` })).rejects.toBeInstanceOf(
+      OpenCheckoutValidationError,
+    );
+  });
+});
+
+describe("gatewayUrl — scheme hardening", () => {
+  it("rejects http://prod.example.com (non-localhost http)", async () => {
+    await expect(
+      load({ publishableKey: "pk_test_kr01_abc123", gatewayUrl: "http://prod.example.com" }),
+    ).rejects.toBeInstanceOf(OpenCheckoutValidationError);
+  });
+
+  it("accepts https://prod.example.com", async () => {
+    await expect(
+      load({ publishableKey: "pk_test_kr01_abc123", gatewayUrl: "https://prod.example.com" }),
+    ).resolves.toBeDefined();
+  });
+
+  it("accepts http://localhost:4000 as a dev carve-out", async () => {
+    await expect(
+      load({ publishableKey: "pk_test_kr01_abc123", gatewayUrl: "http://localhost:4000" }),
+    ).resolves.toBeDefined();
+  });
+});
+
 describe("postal regex strengthening", () => {
   it("US accepts ZIP+4 form", () => {
     const us = COUNTRY_BY_CODE.get("US");

@@ -5,18 +5,35 @@ export class OpenCheckoutValidationError extends Error {
   }
 }
 
-const PUBLISHABLE_KEY_PATTERN = /^pk_(test|live)_[a-z0-9]{4,}_[a-zA-Z0-9]{6,}$/;
+const PUBLISHABLE_KEY_PATTERN = /^pk_(test|live)_([a-z0-9]{4,32})_([a-zA-Z0-9]{6,64})$/;
 
 export function validatePublishableKey(value: unknown): string {
   if (typeof value !== "string" || value.length === 0) {
     throw new OpenCheckoutValidationError("publishableKey is required");
   }
-  if (!PUBLISHABLE_KEY_PATTERN.test(value)) {
+  const match = PUBLISHABLE_KEY_PATTERN.exec(value);
+  if (!match) {
     throw new OpenCheckoutValidationError(
-      `publishableKey must match pk_(test|live)_<shard>_<random>, got "${value}"`,
+      `publishableKey must match pk_(test|live)_<shard:4-32>_<random:6-64>, got "${value}"`,
+    );
+  }
+  const shard = match[2] ?? "";
+  const random = match[3] ?? "";
+  if (isLowEntropySegment(shard) || isLowEntropySegment(random)) {
+    throw new OpenCheckoutValidationError(
+      `publishableKey segments must not be a single repeated character, got "${value}"`,
     );
   }
   return value;
+}
+
+function isLowEntropySegment(segment: string): boolean {
+  if (segment.length === 0) return false;
+  const first = segment[0];
+  for (let i = 1; i < segment.length; i += 1) {
+    if (segment[i] !== first) return false;
+  }
+  return true;
 }
 
 const CUSTOMER_KEY_CHARS = /^[A-Za-z0-9\-_=.@]+$/;
@@ -83,6 +100,17 @@ export function validateMoney(value: unknown): Money {
   return { value: amount, currency: currency as Currency };
 }
 
+const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+
+function isLocalHost(hostname: string): boolean {
+  return LOCAL_HOSTNAMES.has(hostname.toLowerCase());
+}
+
+function isProductionEnv(): boolean {
+  const env = (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV;
+  return env === "production";
+}
+
 export function validateGatewayUrl(value: unknown): string {
   if (typeof value !== "string" || value.length === 0) {
     throw new OpenCheckoutValidationError("gatewayUrl must be a non-empty string");
@@ -93,8 +121,26 @@ export function validateGatewayUrl(value: unknown): string {
   } catch {
     throw new OpenCheckoutValidationError(`gatewayUrl is not a valid URL: "${value}"`);
   }
-  if (!["http:", "https:"].includes(parsed.protocol)) {
-    throw new OpenCheckoutValidationError("gatewayUrl must use http or https");
+  if (parsed.protocol === "https:") return parsed.toString();
+  if (parsed.protocol === "http:" && !isProductionEnv() && isLocalHost(parsed.hostname)) {
+    return parsed.toString();
   }
-  return parsed.toString();
+  throw new OpenCheckoutValidationError(
+    `gatewayUrl must use https (http allowed only on localhost in non-production), got "${value}"`,
+  );
+}
+
+export function validateRedirectUrl(name: string, value: string): URL {
+  let parsed: URL;
+  const base = typeof window !== "undefined" ? window.location.origin : "https://localhost";
+  try {
+    parsed = new URL(value, base);
+  } catch {
+    throw new OpenCheckoutValidationError(`${name} is not a valid URL: "${value}"`);
+  }
+  if (parsed.protocol === "https:") return parsed;
+  if (parsed.protocol === "http:" && isLocalHost(parsed.hostname)) return parsed;
+  throw new OpenCheckoutValidationError(
+    `${name} must use https (http allowed only on localhost), got "${value}"`,
+  );
 }

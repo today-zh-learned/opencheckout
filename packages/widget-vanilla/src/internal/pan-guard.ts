@@ -1,6 +1,9 @@
 export const OPEN_CHECKOUT_MESSAGE_SOURCE = "opencheckout.widget";
 export const OPEN_CHECKOUT_MESSAGE_VERSION = "2026-04-24";
 
+const PAN_MIN_LENGTH = 13;
+const PAN_MAX_LENGTH = 19;
+
 export type OpenCheckoutWidgetMessage<TPayload = unknown> = {
   readonly source: typeof OPEN_CHECKOUT_MESSAGE_SOURCE;
   readonly version: typeof OPEN_CHECKOUT_MESSAGE_VERSION;
@@ -21,6 +24,7 @@ export function containsPan(value: unknown): boolean {
 }
 
 export function assertPanFree(value: unknown): void {
+  if (value === undefined || value === null) return;
   if (containsPan(value)) {
     throw new OpenCheckoutSecurityError("PAN-like card data cannot cross widget boundaries");
   }
@@ -53,25 +57,68 @@ export function isOpenCheckoutMessage(value: unknown): value is OpenCheckoutWidg
 }
 
 function scanForPan(value: unknown, seen: WeakSet<object>): boolean {
+  if (value === null || value === undefined) return false;
   if (typeof value === "string") return stringContainsPan(value);
   if (typeof value === "number" || typeof value === "bigint") {
     return stringContainsPan(String(value));
   }
-  if (value === null || typeof value !== "object") return false;
+  if (typeof value === "boolean") return false;
+  if (typeof value !== "object") return false;
   if (seen.has(value)) return false;
   seen.add(value);
+
+  if (value instanceof Map) {
+    for (const [k, v] of value.entries()) {
+      if (scanForPan(k, seen) || scanForPan(v, seen)) return true;
+    }
+    return false;
+  }
+  if (value instanceof Set) {
+    for (const v of value.values()) {
+      if (scanForPan(v, seen)) return true;
+    }
+    return false;
+  }
+  if (value instanceof ArrayBuffer) {
+    return stringContainsPan(decodeBytes(new Uint8Array(value)));
+  }
+  if (value instanceof Uint8Array) {
+    return stringContainsPan(decodeBytes(value));
+  }
+  if (ArrayBuffer.isView(value)) {
+    // Other typed arrays (Int16Array, Float32Array, etc.) are not safe to decode as
+    // text — refuse them rather than silently passing data we cannot scan.
+    throw new OpenCheckoutSecurityError(
+      `unsupported input type for PAN scan: ${value.constructor.name}`,
+    );
+  }
   if (Array.isArray(value)) return value.some((item) => scanForPan(item, seen));
   return Object.values(value as Record<string, unknown>).some((item) => scanForPan(item, seen));
 }
 
+function decodeBytes(bytes: Uint8Array): string {
+  try {
+    return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+  } catch {
+    return "";
+  }
+}
+
 function stringContainsPan(value: string): boolean {
-  const candidates = value.match(/[0-9][0-9 -]{11,30}[0-9]/g) ?? [];
-  return candidates.some((candidate) => {
-    const digits = candidate.replace(/\D/g, "");
-    return (
-      digits.length >= 13 && digits.length <= 19 && !isRepeatedDigit(digits) && passesLuhn(digits)
-    );
-  });
+  // NFKC folds full-width digits (e.g. "４１１１") and other compat forms into ASCII so
+  // the digit-only window matches them.
+  const normalized = value.normalize("NFKC");
+  const digits = normalized.replace(/\D+/gu, "");
+  if (digits.length < PAN_MIN_LENGTH) return false;
+  for (let start = 0; start + PAN_MIN_LENGTH <= digits.length; start += 1) {
+    const maxLen = Math.min(PAN_MAX_LENGTH, digits.length - start);
+    for (let len = PAN_MIN_LENGTH; len <= maxLen; len += 1) {
+      const window = digits.slice(start, start + len);
+      if (isRepeatedDigit(window)) continue;
+      if (passesLuhn(window)) return true;
+    }
+  }
+  return false;
 }
 
 function isRepeatedDigit(digits: string): boolean {
