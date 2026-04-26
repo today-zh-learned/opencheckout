@@ -124,8 +124,9 @@ export function mountAgreementWidget(
   };
 
   const renderNode = () => {
-    if (isSingle) {
-      const clause = rawClauses[0]!;
+    const firstClause = rawClauses[0];
+    if (isSingle && firstClause) {
+      const clause = firstClause;
       const checked = clauseState.get(clause.id) ?? false;
       return h(
         "section",

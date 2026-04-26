@@ -1,4 +1,4 @@
-import { type PaymentMethodDescriptor } from "../../internal/payment-methods.js";
+import type { PaymentMethodDescriptor } from "../../internal/payment-methods.js";
 import { type ComponentChild, h } from "../../internal/preact-runtime.js";
 
 export type PaymentTileProps = {
